@@ -1,0 +1,80 @@
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    font-family: "Plus Jakarta Sans", Inter, system-ui, -apple-system, Segoe UI, sans-serif;
+    color: #0f172a;
+    background-color: #f7f8ff;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    margin: 0;
+    min-width: 320px;
+    min-height: 100vh;
+    @apply bg-surface-50 text-slate-900 dark:bg-surface-900 dark:text-slate-100;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    letter-spacing: -0.04em;
+  }
+
+  #root {
+    min-height: 100vh;
+  }
+}
+
+@layer components {
+  .soft-surface {
+    @apply rounded-3xl border border-white/70 bg-white/80 shadow-panel backdrop-blur-xl dark:border-white/10 dark:bg-surface-800/80 dark:shadow-neumorph-dark;
+  }
+
+  .hover-lift {
+    @apply transition duration-300 ease-out motion-safe:hover:-translate-y-1 motion-safe:hover:shadow-panel;
+  }
+
+  .field-surface {
+    @apply w-full appearance-none rounded-2xl border border-white/80 bg-white/80 px-3.5 py-3 text-sm text-slate-800 shadow-sm outline-none transition duration-200 placeholder:text-slate-400 focus:border-brand-500 focus:ring-4 focus:ring-brand-100/70 dark:border-white/10 dark:bg-surface-900/70 dark:text-slate-100 dark:placeholder:text-slate-500;
+  }
+
+  .surface-pill {
+    @apply rounded-full border border-white/70 bg-white/70 shadow-soft backdrop-blur dark:border-white/10 dark:bg-surface-800/80;
+  }
+
+  .page-intro {
+    @apply space-y-2 px-1;
+  }
+
+  .page-eyebrow {
+    @apply text-[11px] font-semibold uppercase tracking-[0.22em] text-brand-700 dark:text-brand-100;
+  }
+
+  .page-title {
+    @apply text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100 sm:text-[2rem];
+  }
+
+  .page-copy {
+    @apply max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300 sm:text-base;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hover-lift {
+    transform: none !important;
+  }
+}
