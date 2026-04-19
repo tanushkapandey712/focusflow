@@ -37,12 +37,13 @@ export const Sidebar = () => (
             to={to}
             className={({ isActive }) =>
               cn(
-                "group flex items-center gap-3 rounded-[1.4rem] px-3.5 py-3 text-sm font-medium text-slate-600 transition duration-300 hover:bg-white/76 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-surface-800 dark:hover:text-white",
-                isActive && "bg-white/92 text-slate-900 shadow-soft ring-1 ring-white/60 dark:bg-surface-800 dark:text-white dark:ring-white/5",
+                "group flex items-center gap-3 rounded-[1.4rem] px-3.5 py-3 text-sm font-medium text-slate-600 transition duration-300 hover:bg-white/76 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800/90 dark:hover:text-white",
+                isActive &&
+                  "bg-white/92 text-slate-900 shadow-soft ring-1 ring-white/60 dark:bg-brand-500/15 dark:text-white dark:ring-brand-300/15",
               )
             }
           >
-            <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-white/72 text-slate-700 shadow-soft transition group-hover:bg-white dark:bg-surface-900/70 dark:text-slate-200">
+            <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-white/72 text-slate-700 shadow-soft transition group-hover:bg-white dark:bg-slate-950/55 dark:text-slate-200">
               <Icon size={16} />
             </div>
             <span className="tracking-tight">{label}</span>
@@ -50,7 +51,7 @@ export const Sidebar = () => (
         ))}
       </nav>
 
-      <div className="mt-auto rounded-[1.55rem] border border-white/80 bg-white/68 p-4 shadow-soft dark:border-white/10 dark:bg-surface-900/65">
+      <div className="mt-auto rounded-[1.55rem] border border-white/80 bg-white/68 p-4 shadow-soft dark:border-white/10 dark:bg-slate-900/72">
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
           Study Style
         </p>

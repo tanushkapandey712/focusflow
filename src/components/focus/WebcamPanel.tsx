@@ -21,11 +21,11 @@ const cameraStateLabel: Record<UseCameraFocusTrackingResult["cameraState"], stri
   error: "Camera unavailable",
 };
 
-const getPreviewMessage = (tracker: UseCameraFocusTrackingResult) => {
+const getCameraPanelMessage = (tracker: UseCameraFocusTrackingResult) => {
   if (tracker.cameraState === "requesting-permission") {
     return {
       title: "Waiting for camera access",
-      detail: "Approve the browser permission prompt to begin local tracking.",
+      detail: "Approve the browser permission prompt to begin local tracking. The feed stays hidden in the interface.",
     };
   }
 
@@ -50,9 +50,16 @@ const getPreviewMessage = (tracker: UseCameraFocusTrackingResult) => {
     };
   }
 
+  if (tracker.isCameraActive) {
+    return {
+      title: "Camera view stays hidden",
+      detail: "FocusFlow tracks locally in the background and only shows the focus signals here.",
+    };
+  }
+
   return {
-    title: "Camera preview will appear here.",
-    detail: "Start the camera to track simple attention signals during the session.",
+    title: "Camera view stays hidden",
+    detail: "Start tracking when you want focus signals. The interface will never show a live self-view.",
   };
 };
 
@@ -73,7 +80,7 @@ const getCameraHelperText = (
   }
 
   if (tracker.isCameraActive && !sessionRunning) {
-    return "Preview is live. Session analytics start when you begin a study block.";
+    return "Tracking is ready. Session analytics start when you begin a study block.";
   }
 
   if (tracker.isCameraActive && sessionRunning) {
@@ -148,7 +155,7 @@ export const WebcamPanel = ({
   tracker,
   sessionRunning,
 }: WebcamPanelProps) => {
-  const previewMessage = getPreviewMessage(tracker);
+  const cameraPanelMessage = getCameraPanelMessage(tracker);
   const presenceMessage = getPresenceMessage(tracker);
   const liveSignals = [
     {
@@ -203,35 +210,37 @@ export const WebcamPanel = ({
         </div>
 
         <div className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
-          <div className="overflow-hidden rounded-[1.75rem] border border-slate-200/80 bg-slate-950 shadow-soft transition-colors duration-300 dark:border-white/10">
-            {tracker.isCameraActive ? (
-              <div className="relative">
-                <video
-                  ref={tracker.previewRef}
-                  className="aspect-video w-full object-cover"
-                  autoPlay
-                  muted
-                  playsInline
-                />
-                <div className="absolute left-4 top-4 rounded-full bg-slate-950/55 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/88 backdrop-blur">
-                  Local only
+          <div className="rounded-[1.75rem] border border-slate-200/80 bg-slate-50/88 p-5 shadow-soft transition-colors duration-300 dark:border-white/10 dark:bg-slate-900/72">
+            <div className="flex h-full flex-col justify-between gap-5">
+              <div className="space-y-3">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-slate-950 text-white shadow-soft dark:bg-slate-800">
+                  <PreviewIcon size={18} />
+                </div>
+                <div className="space-y-2 text-center sm:text-left">
+                  <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                    {cameraPanelMessage.title}
+                  </p>
+                  <p className="text-sm leading-6 text-slate-600 dark:text-slate-300">
+                    {cameraPanelMessage.detail}
+                  </p>
                 </div>
               </div>
-            ) : (
-              <div className="flex aspect-video items-center justify-center px-6 text-center">
-                <div className="space-y-2">
-                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white">
-                    <PreviewIcon size={18} />
+
+              <div className="grid gap-2 sm:grid-cols-2">
+                {["No live self-view", "Local processing", "Optional at any time", "Focus signals only"].map((item) => (
+                  <div
+                    key={item}
+                    className="rounded-[1.2rem] bg-white/80 px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-600 shadow-soft ring-1 ring-white/70 dark:bg-slate-950/55 dark:text-slate-300 dark:ring-white/5"
+                  >
+                    {item}
                   </div>
-                  <p className="text-sm font-medium text-white">{previewMessage.title}</p>
-                  <p className="text-xs leading-6 text-white/70">{previewMessage.detail}</p>
-                </div>
+                ))}
               </div>
-            )}
+            </div>
           </div>
 
           <div className="space-y-3">
-            <div className="rounded-[1.5rem] border border-slate-200/80 bg-slate-50/85 p-4 dark:border-white/10 dark:bg-surface-900/65">
+            <div className="rounded-[1.5rem] border border-slate-200/80 bg-slate-50/85 p-4 dark:border-white/10 dark:bg-slate-900/72">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
@@ -277,7 +286,7 @@ export const WebcamPanel = ({
               </p>
             </div>
 
-            <div className="rounded-[1.5rem] border border-slate-200/80 bg-slate-50/85 p-4 transition-colors duration-300 dark:border-white/10 dark:bg-surface-900/65">
+            <div className="rounded-[1.5rem] border border-slate-200/80 bg-slate-50/85 p-4 transition-colors duration-300 dark:border-white/10 dark:bg-slate-900/72">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
@@ -296,7 +305,7 @@ export const WebcamPanel = ({
                 {liveSignals.map((signal) => (
                   <div
                     key={signal.label}
-                    className="rounded-[1.2rem] bg-white/78 p-3 shadow-soft ring-1 ring-white/60 dark:bg-surface-950/45 dark:ring-white/5"
+                    className="rounded-[1.2rem] bg-white/78 p-3 shadow-soft ring-1 ring-white/60 dark:bg-slate-950/55 dark:ring-white/5"
                   >
                     <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
                       {signal.label}

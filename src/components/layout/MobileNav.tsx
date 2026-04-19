@@ -21,11 +21,12 @@ export const MobileNav = () => (
           className={({ isActive }) =>
             cn(
               "flex flex-col items-center rounded-[1.35rem] px-1 py-2 text-[10px] font-medium text-slate-500 transition duration-300 dark:text-slate-400",
-              isActive && "bg-white/90 text-slate-900 shadow-soft ring-1 ring-white/60 dark:bg-surface-800 dark:text-white dark:ring-white/5",
+              isActive &&
+                "bg-white/90 text-slate-900 shadow-soft ring-1 ring-white/60 dark:bg-brand-500/15 dark:text-white dark:ring-brand-300/15",
             )
           }
         >
-          <div className="flex h-8 w-8 items-center justify-center rounded-2xl bg-white/72 shadow-soft transition-colors dark:bg-surface-900/70">
+          <div className="flex h-8 w-8 items-center justify-center rounded-2xl bg-white/72 shadow-soft transition-colors dark:bg-slate-950/55">
             <Icon size={15} />
           </div>
           <span className="mt-1">{label}</span>

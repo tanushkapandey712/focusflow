@@ -46,7 +46,6 @@ const FACE_VISIBILITY_GRACE_MS = 450;
 
 export interface UseCameraFocusTrackingResult {
   videoRef: RefObject<HTMLVideoElement>;
-  previewRef: (element: HTMLVideoElement | null) => void;
   cameraState: CameraLifecycleState;
   error: string | null;
   isCameraActive: boolean;
@@ -191,7 +190,6 @@ export const useCameraFocusTracking = ({
 }: UseCameraFocusTrackingOptions = {}): UseCameraFocusTrackingResult => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const previewElementRef = useRef<HTMLVideoElement | null>(null);
   const detectionTimeoutRef = useRef<number | null>(null);
   const processingRef = useRef(false);
   const isMountedRef = useRef(true);
@@ -295,22 +293,6 @@ export const useCameraFocusTracking = ({
       recentBlinkLikeEvents,
     ],
   );
-
-  const previewRef = useCallback((element: HTMLVideoElement | null) => {
-    previewElementRef.current = element;
-
-    if (!element) {
-      return;
-    }
-
-    if (!streamRef.current) {
-      element.pause();
-      element.srcObject = null;
-      return;
-    }
-
-    void attachStreamToVideo(element, streamRef.current);
-  }, []);
 
   const syncMetricsState = useCallback((nowMs: number) => {
     const analyticsNowMs = sessionEndedAtMsRef.current ?? nowMs;
@@ -440,7 +422,6 @@ export const useCameraFocusTracking = ({
     stopStream(streamRef.current);
     streamRef.current = null;
     stopVideoElement(videoRef.current);
-    stopVideoElement(previewElementRef.current);
 
     processingRef.current = false;
     missingStartedAtMsRef.current = null;
@@ -823,9 +804,6 @@ export const useCameraFocusTracking = ({
 
       streamRef.current = stream;
       await attachStreamToVideo(videoRef.current, stream);
-      if (previewElementRef.current) {
-        await attachStreamToVideo(previewElementRef.current, stream);
-      }
       faceLandmarkerRef.current = await getFaceLandmarker();
 
       const [videoTrack] = stream.getVideoTracks();
@@ -982,7 +960,6 @@ export const useCameraFocusTracking = ({
   return useMemo(
     () => ({
       videoRef,
-      previewRef,
       cameraState,
       error,
       isCameraActive:
@@ -1044,7 +1021,6 @@ export const useCameraFocusTracking = ({
       startCamera,
       stopCamera,
       totalAwayEvents,
-      previewRef,
     ],
   );
 };

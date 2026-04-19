@@ -29,7 +29,7 @@ const statusToneMap: Record<string, string> = {
     "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-200",
   Distracted: "bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-200",
   Away: "bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-200",
-  inactive: "bg-slate-100 text-slate-700 dark:bg-white/10 dark:text-slate-200",
+  inactive: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200",
 };
 
 export const FocusSnapshotCard = ({
@@ -66,7 +66,7 @@ export const FocusSnapshotCard = ({
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            <div className="rounded-[1.4rem] border border-white/80 bg-white/75 px-4 py-3 shadow-soft dark:border-white/10 dark:bg-surface-900/65">
+            <div className="rounded-[1.4rem] border border-white/80 bg-white/75 px-4 py-3 shadow-soft dark:border-white/10 dark:bg-slate-900/72">
               <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
                 Attention Score
               </p>
@@ -89,7 +89,7 @@ export const FocusSnapshotCard = ({
           {items.map((item) => (
             <div
               key={item.label}
-              className="rounded-[1.5rem] bg-slate-50/88 p-4 shadow-soft ring-1 ring-white/70 dark:bg-surface-900/70 dark:ring-white/5"
+              className="rounded-[1.5rem] bg-slate-50/88 p-4 shadow-soft ring-1 ring-white/70 dark:bg-slate-900/72 dark:ring-white/5"
             >
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
                 {item.label}
@@ -103,7 +103,7 @@ export const FocusSnapshotCard = ({
 
         <p className="text-sm text-slate-500 dark:text-slate-400">
           {isCameraActive
-            ? "This card mirrors the live camera signals while you study."
+            ? "This card mirrors the live focus signals while you study."
             : "Start camera tracking on the timer page whenever you want live focus updates here."}
         </p>
       </div>

@@ -38,11 +38,11 @@ const statusMap = {
   },
   unsupported: {
     label: "Unsupported",
-    className: "bg-slate-100 text-slate-700 dark:bg-white/10 dark:text-slate-200",
+    className: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200",
   },
   inactive: {
     label: "Camera Off",
-    className: "bg-slate-100 text-slate-700 dark:bg-white/10 dark:text-slate-200",
+    className: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200",
   },
 } as const;
 
