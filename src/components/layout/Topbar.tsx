@@ -14,6 +14,7 @@ export const Topbar = ({ darkMode, toggleDarkMode }: TopbarProps) => (
 const routeMeta: Record<string, { title: string; subtitle: string }> = {
   "/dashboard": { title: "Dashboard", subtitle: "Your study overview" },
   "/timer": { title: "Study Timer", subtitle: "One clean block at a time" },
+  "/syllabus": { title: "Syllabus Map", subtitle: "Keep the scope visible" },
   "/goals": { title: "Goals & Streaks", subtitle: "Progress that stays visible" },
   "/analytics": { title: "Analytics", subtitle: "Patterns worth noticing" },
   "/history": { title: "Session History", subtitle: "Review the rhythm" },

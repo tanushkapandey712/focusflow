@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { WebcamPanel } from "../components/focus/WebcamPanel";
+import { Camera, CameraOff } from "lucide-react";
 import { DashboardContainer } from "../components/dashboard/DashboardContainer";
-import { GradientCard, SectionContainer } from "../components/ui";
+import { FocusStatusBadge } from "../components/focus/FocusStatusBadge";
+import { Button, GradientCard, SectionContainer } from "../components/ui";
 import { formatTimer } from "../features/timer/format";
 import { TimerCard } from "../features/timer/TimerCard";
 import { TIMER_PRESETS } from "../features/timer/types";
@@ -113,16 +114,51 @@ export const TimerPage = () => {
         />
       </SectionContainer>
 
-      <WebcamPanel
-        tracker={cameraTracking}
-        sessionRunning={timer.status === "running" || timer.status === "paused"}
-      />
-
       <GradientCard tone="mint" className="animate-fade-up mx-auto max-w-3xl p-6">
         <h3 className="text-lg font-semibold tracking-tight text-slate-900 dark:text-slate-100">Built to stay calm under focus.</h3>
         <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
           The timer stays simple: choose the subject, define the goal, and let the rest of the block feel lighter.
         </p>
+
+        <div className="mt-5 flex flex-col gap-3 rounded-[1.4rem] bg-white/72 p-4 shadow-soft dark:bg-slate-900/60">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                Focus Tracking
+              </p>
+              <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                Camera tracking stays hidden and local. Turn it on only when you want live focus signals.
+              </p>
+            </div>
+            <FocusStatusBadge
+              cameraState={cameraTracking.cameraState}
+              attentionStatus={cameraTracking.attentionStatus}
+            />
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            {!cameraTracking.isCameraActive ? (
+              <Button variant="secondary" onClick={() => void cameraTracking.startCamera()} className="rounded-full px-5">
+                <Camera size={15} />
+                Enable tracking
+              </Button>
+            ) : cameraTracking.cameraState === "requesting-permission" ? (
+              <Button variant="secondary" disabled className="rounded-full px-5">
+                <Camera size={15} />
+                Waiting for access
+              </Button>
+            ) : (
+              <Button variant="secondary" onClick={cameraTracking.stopCamera} className="rounded-full px-5">
+                <CameraOff size={15} />
+                Disable tracking
+              </Button>
+            )}
+
+            {cameraTracking.error ? (
+              <p className="text-sm text-rose-600 dark:text-rose-300">{cameraTracking.error}</p>
+            ) : null}
+          </div>
+        </div>
       </GradientCard>
     </DashboardContainer>
   );

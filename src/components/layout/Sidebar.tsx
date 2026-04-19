@@ -1,10 +1,11 @@
-import { BarChart3, Clock3, LayoutDashboard, ListChecks, Settings2, Sparkles, Target } from "lucide-react";
+import { BarChart3, BookOpenText, Clock3, LayoutDashboard, ListChecks, Settings2, Sparkles, Target } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { cn } from "../../lib/cn";
 
 const navItems = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/timer", label: "Study Timer", icon: Clock3 },
+  { to: "/syllabus", label: "Syllabus Map", icon: BookOpenText },
   { to: "/goals", label: "Goals", icon: Target },
   { to: "/analytics", label: "Analytics", icon: BarChart3 },
   { to: "/history", label: "Session History", icon: ListChecks },

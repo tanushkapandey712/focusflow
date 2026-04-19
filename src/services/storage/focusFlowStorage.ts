@@ -3,6 +3,8 @@ import type {
   StudyGoal,
   StudySession,
   Subject,
+  SyllabusTopic,
+  SyllabusUnit,
   UserProfile,
 } from "../../types/models";
 
@@ -47,12 +49,90 @@ const readList = <T,>(key: string): T[] => {
   return Array.isArray(parsed) ? (parsed as T[]) : [];
 };
 
+const createFallbackNodeId = (prefix: string, index: number) => `${prefix}-${index + 1}`;
+
+const normalizeTopic = (value: unknown, index: number): SyllabusTopic | null => {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const candidate = value as Partial<SyllabusTopic>;
+  const title = typeof candidate.title === "string" ? candidate.title.trim() : "";
+
+  if (!title) {
+    return null;
+  }
+
+  return {
+    id:
+      typeof candidate.id === "string" && candidate.id.trim()
+        ? candidate.id
+        : createFallbackNodeId("topic", index),
+    title,
+    completed: candidate.completed === true,
+  };
+};
+
+const normalizeUnit = (value: unknown, index: number): SyllabusUnit | null => {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const candidate = value as Partial<SyllabusUnit> & { topics?: unknown };
+  const title = typeof candidate.title === "string" ? candidate.title.trim() : "";
+
+  if (!title) {
+    return null;
+  }
+
+  const rawTopics = Array.isArray(candidate.topics) ? candidate.topics : [];
+
+  return {
+    id:
+      typeof candidate.id === "string" && candidate.id.trim()
+        ? candidate.id
+        : createFallbackNodeId("unit", index),
+    title,
+    topics: rawTopics
+      .map((topic, topicIndex) => normalizeTopic(topic, topicIndex))
+      .filter((topic): topic is SyllabusTopic => Boolean(topic)),
+  };
+};
+
+const normalizeSubject = (value: unknown): Subject | null => {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const candidate = value as Partial<Subject> & { syllabusUnits?: unknown };
+  const id = typeof candidate.id === "string" ? candidate.id.trim() : "";
+  const name = typeof candidate.name === "string" ? candidate.name.trim() : "";
+  const color = typeof candidate.color === "string" ? candidate.color.trim() : "";
+
+  if (!id || !name || !color) {
+    return null;
+  }
+
+  const rawUnits = Array.isArray(candidate.syllabusUnits) ? candidate.syllabusUnits : [];
+
+  return {
+    id,
+    name,
+    color,
+    syllabusUnits: rawUnits
+      .map((unit, unitIndex) => normalizeUnit(unit, unitIndex))
+      .filter((unit): unit is SyllabusUnit => Boolean(unit)),
+  };
+};
+
 export interface FocusFlowStorageAPI {
   getSessions: () => StudySession[];
   saveSession: (session: StudySession) => StudySession[];
   updateSession: (sessionId: string, patch: Partial<StudySession>) => StudySession[];
   getSubjects: () => Subject[];
   saveSubjects: (subjects: Subject[]) => void;
+  addSubject: (subject: Subject) => Subject[];
+  updateSubject: (subjectId: string, patch: Partial<Subject>) => Subject[];
   getProfile: () => UserProfile;
   saveProfile: (profile: UserProfile) => void;
   getGoals: () => StudyGoal[];
@@ -78,9 +158,41 @@ export const focusFlowStorage: FocusFlowStorageAPI = {
     return next;
   },
 
-  getSubjects: () => readList<Subject>(STORAGE_KEYS.subjects),
+  getSubjects: () =>
+    readList<unknown>(STORAGE_KEYS.subjects)
+      .map((subject) => normalizeSubject(subject))
+      .filter((subject): subject is Subject => Boolean(subject)),
 
-  saveSubjects: (subjects) => safeWrite(STORAGE_KEYS.subjects, subjects),
+  saveSubjects: (subjects) =>
+    safeWrite(
+      STORAGE_KEYS.subjects,
+      subjects
+        .map((subject) => normalizeSubject(subject))
+        .filter((subject): subject is Subject => Boolean(subject)),
+    ),
+
+  addSubject: (subject) => {
+    const current = focusFlowStorage.getSubjects();
+    const normalized = normalizeSubject(subject);
+    if (!normalized) {
+      return current;
+    }
+
+    const next = [normalized, ...current.filter((item) => item.id !== normalized.id)];
+    safeWrite(STORAGE_KEYS.subjects, next);
+    return next;
+  },
+
+  updateSubject: (subjectId, patch) => {
+    const current = focusFlowStorage.getSubjects();
+    const next = current.map((subject) =>
+      subject.id === subjectId
+        ? normalizeSubject({ ...subject, ...patch }) ?? subject
+        : subject,
+    );
+    safeWrite(STORAGE_KEYS.subjects, next);
+    return next;
+  },
 
   getProfile: () => {
     const stored = safeParse<Partial<UserProfile>>(localStorage.getItem(STORAGE_KEYS.profile), {});

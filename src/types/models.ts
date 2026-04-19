@@ -1,9 +1,22 @@
 import type { FocusTrackingSessionSummary } from "./focusTracking";
 
+export interface SyllabusTopic {
+  id: string;
+  title: string;
+  completed: boolean;
+}
+
+export interface SyllabusUnit {
+  id: string;
+  title: string;
+  topics: SyllabusTopic[];
+}
+
 export interface Subject {
   id: string;
   name: string;
   color: string;
+  syllabusUnits: SyllabusUnit[];
 }
 
 export type InstitutionType = "school" | "college";

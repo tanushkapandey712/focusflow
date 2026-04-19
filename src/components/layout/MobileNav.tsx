@@ -1,10 +1,11 @@
-import { BarChart3, Clock3, LayoutDashboard, ListChecks, Settings2, Target } from "lucide-react";
+import { BarChart3, BookOpenText, Clock3, LayoutDashboard, ListChecks, Settings2, Target } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { cn } from "../../lib/cn";
 
 const items = [
   { to: "/dashboard", icon: LayoutDashboard, label: "Home" },
   { to: "/timer", icon: Clock3, label: "Timer" },
+  { to: "/syllabus", icon: BookOpenText, label: "Map" },
   { to: "/goals", icon: Target, label: "Goals" },
   { to: "/analytics", icon: BarChart3, label: "Stats" },
   { to: "/history", icon: ListChecks, label: "History" },
@@ -13,7 +14,7 @@ const items = [
 
 export const MobileNav = () => (
   <nav className="fixed inset-x-0 bottom-0 z-20 p-3 lg:hidden">
-    <div className="soft-surface mx-auto grid max-w-xl grid-cols-6 gap-1.5 p-2.5">
+    <div className="soft-surface mx-auto grid max-w-xl grid-cols-7 gap-1.5 p-2.5">
       {items.map(({ to, icon: Icon, label }) => (
         <NavLink
           key={to}

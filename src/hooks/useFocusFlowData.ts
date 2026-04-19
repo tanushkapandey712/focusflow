@@ -18,6 +18,8 @@ interface FocusFlowDataValue {
   goals: StudyGoal[];
   addSession: (session: StudySession) => void;
   updateSession: (sessionId: string, patch: Partial<StudySession>) => void;
+  addSubject: (subject: Subject) => void;
+  updateSubject: (subjectId: string, patch: Partial<Subject>) => void;
   setSubjects: (nextSubjects: Subject[]) => void;
   setProfile: (nextProfile: UserProfile) => void;
   setGoals: (nextGoals: StudyGoal[]) => void;
@@ -43,6 +45,16 @@ export const FocusFlowDataProvider = ({ children }: PropsWithChildren) => {
   const updateSession = (sessionId: string, patch: Partial<StudySession>) => {
     const next = localDataSource.updateSession(sessionId, patch);
     setSessions(next);
+  };
+
+  const addSubject = (subject: Subject) => {
+    const next = localDataSource.addSubject(subject);
+    setSubjectsState(next);
+  };
+
+  const updateSubject = (subjectId: string, patch: Partial<Subject>) => {
+    const next = localDataSource.updateSubject(subjectId, patch);
+    setSubjectsState(next);
   };
 
   const setSubjects = (nextSubjects: Subject[]) => {
@@ -97,6 +109,8 @@ export const FocusFlowDataProvider = ({ children }: PropsWithChildren) => {
     goals,
     addSession,
     updateSession,
+    addSubject,
+    updateSubject,
     setSubjects,
     setProfile,
     setGoals,

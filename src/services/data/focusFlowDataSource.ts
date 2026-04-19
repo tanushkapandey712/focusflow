@@ -13,6 +13,8 @@ export interface FocusFlowDataSource {
   saveProfile: (profile: UserProfile) => void;
   saveGoals: (goals: StudyGoal[]) => void;
   saveSubjects: (subjects: Subject[]) => void;
+  addSubject: (subject: Subject) => Subject[];
+  updateSubject: (subjectId: string, patch: Partial<Subject>) => Subject[];
 }
 
 // Swap this implementation with an API-backed source in future.
@@ -28,4 +30,6 @@ export const localDataSource: FocusFlowDataSource = {
   saveProfile: (profile) => focusFlowStorage.saveProfile(profile),
   saveGoals: (goals) => focusFlowStorage.saveGoals(goals),
   saveSubjects: (subjects) => focusFlowStorage.saveSubjects(subjects),
+  addSubject: (subject) => focusFlowStorage.addSubject(subject),
+  updateSubject: (subjectId, patch) => focusFlowStorage.updateSubject(subjectId, patch),
 };

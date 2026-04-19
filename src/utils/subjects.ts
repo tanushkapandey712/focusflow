@@ -69,6 +69,7 @@ export const buildSubjectsFromNames = (subjectNames: string[], existingSubjects:
       id: existing?.id ?? createSubjectId(name),
       name: existing?.name ?? name,
       color: ensureHexColor(existing?.color, existing?.name ?? name),
+      syllabusUnits: existing?.syllabusUnits ?? [],
     });
 
     return acc;
