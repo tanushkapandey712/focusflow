@@ -61,6 +61,7 @@ export const TimerCard = ({
   onEnd,
   onReset,
 }: TimerCardProps) => {
+  const activePresetLabel = presets.find((preset) => preset.mode === mode)?.label ?? "Focus Session";
   const resolvedSubject = selectedSubject
     ? getResolvedSubject([selectedSubject], { subjectId: selectedSubject.id, subjectName: selectedSubject.name })
     : undefined;
@@ -77,12 +78,22 @@ export const TimerCard = ({
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.42),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(255,255,255,0.18),transparent_30%)]" />
         <div className="relative space-y-7 text-center">
           <div className="space-y-3">
-            <div className="surface-pill inline-flex px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-600 dark:text-slate-300">
-              FocusFlow Timer
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              <div className="surface-pill inline-flex px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-600 dark:text-slate-300">
+                FocusFlow Timer
+              </div>
+              <div className="surface-pill inline-flex px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-600 dark:text-slate-300">
+                {activePresetLabel}
+              </div>
             </div>
             <h1 className="text-5xl font-semibold tracking-tight text-slate-900 dark:text-white sm:text-[4.75rem]">
               {timerText}
             </h1>
+            <p className="mx-auto max-w-lg text-sm leading-6 text-slate-500 dark:text-slate-400">
+              {goal.trim()
+                ? `Working on "${goal.trim()}". Keep this block clean and finish one meaningful step.`
+                : "Choose a subject, set a clear goal, and let the next block stay simple."}
+            </p>
             {resolvedSubject ? (
               <div className="flex justify-center">
                 <SubjectBadge subject={resolvedSubject} />
@@ -103,6 +114,11 @@ export const TimerCard = ({
             />
           </div>
 
+          <div className="mx-auto flex w-full max-w-md items-center justify-between text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+            <span>{status === "running" ? "In session" : status === "paused" ? "Paused" : "Ready"}</span>
+            <span>{Math.round(progress)}% complete</span>
+          </div>
+
           <div className="grid gap-3 sm:grid-cols-3">
             {presets.map((preset) => (
               <button
@@ -112,7 +128,7 @@ export const TimerCard = ({
                 className={cn(
                   "rounded-full px-4 py-2.5 text-sm font-semibold transition-all duration-200",
                   mode === preset.mode
-                    ? "bg-white text-slate-900 shadow-soft dark:bg-surface-800 dark:text-white"
+                    ? "bg-white text-slate-900 shadow-soft ring-1 ring-white/60 dark:bg-surface-800 dark:text-white dark:ring-white/5"
                     : "bg-white/58 text-slate-600 hover:bg-white/85 dark:bg-surface-800/80 dark:text-slate-300 dark:hover:bg-surface-800",
                 )}
               >
@@ -177,10 +193,10 @@ export const TimerCard = ({
               </div>
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
-                  Progress
+                  {goal.trim() ? "Session Goal" : "Progress"}
                 </p>
                 <p className="mt-2 text-base font-semibold text-slate-900 dark:text-slate-100">
-                  {Math.round(progress)}% complete
+                  {goal.trim() || `${Math.round(progress)}% complete`}
                 </p>
               </div>
             </div>

@@ -9,8 +9,19 @@ interface StatCardProps {
 }
 
 export const StatCard = ({ label, value, trend, compact = false }: StatCardProps) => (
-  <Card className={compact ? "flex h-full flex-col justify-between gap-3 p-4 sm:p-5" : "flex h-full flex-col gap-4"}>
-    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">{label}</p>
+  <Card
+    className={
+      compact
+        ? "flex h-full flex-col justify-between gap-3 p-4 sm:p-5"
+        : "flex h-full flex-col gap-4 p-5 sm:p-6"
+    }
+  >
+    <div className="flex items-center justify-between gap-3">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+        {label}
+      </p>
+      <span className="h-2.5 w-2.5 rounded-full bg-brand-500/70 shadow-soft dark:bg-brand-200/70" />
+    </div>
     <p
       className={
         compact

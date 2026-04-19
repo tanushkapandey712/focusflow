@@ -77,7 +77,7 @@ export const TimerPage = () => {
     <DashboardContainer>
       <SectionContainer
         title="Study Timer"
-        description="Minimal, high-clarity focus timer with smooth session controls and optional on-device face presence detection."
+        description="A clean focus timer with optional on-device camera cues, smooth controls, and no extra clutter."
       >
         <TimerCard
           subjects={subjects}
@@ -121,7 +121,7 @@ export const TimerPage = () => {
       <GradientCard tone="mint" className="animate-fade-up mx-auto max-w-3xl p-6">
         <h3 className="text-lg font-semibold tracking-tight text-slate-900 dark:text-slate-100">Built to stay calm under focus.</h3>
         <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-          Cleaner controls, softer depth, and stronger alignment now make the timer feel more intentional without adding noise.
+          The timer stays simple: choose the subject, define the goal, and let the rest of the block feel lighter.
         </p>
       </GradientCard>
     </DashboardContainer>

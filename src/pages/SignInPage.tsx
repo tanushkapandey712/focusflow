@@ -12,9 +12,9 @@ import {
 import { EMAIL_PATTERN, getNextAppRoute } from "../utils/profile";
 
 const authHighlights = [
-  "Secure email verification with no password to remember.",
-  "Fast access back into your study workspace from the same verified address.",
-  "Subjects, schedule, and profile details stay editable any time in settings.",
+  "Passwordless email verification that stays simple.",
+  "Fast access back into the same study workspace.",
+  "Subjects, schedule, and profile details stay editable later.",
 ] as const;
 
 export const SignInPage = () => {
@@ -137,10 +137,10 @@ export const SignInPage = () => {
               <div className="space-y-3">
                 <p className="text-xs font-semibold uppercase tracking-[0.22em] text-brand-700">Secure Access</p>
                 <h1 className="text-balance text-4xl font-semibold tracking-tight text-slate-900 sm:text-5xl">
-                  Continue with email.
+                  Sign in with your email.
                 </h1>
                 <p className="max-w-xl text-base leading-7 text-slate-600">
-                  Use your verified email to access FocusFlow. We&apos;ll send a secure link and handle the sign-in without passwords.
+                  Verify once, come back quickly, and keep the study flow uninterrupted.
                 </p>
               </div>
 
@@ -162,7 +162,7 @@ export const SignInPage = () => {
                   Email verification
                 </h2>
                 <p className="text-sm leading-6 text-slate-500 dark:text-slate-400">
-                  Enter the email address you want to use with FocusFlow.
+                  Enter the email you want to use with FocusFlow.
                 </p>
               </div>
 
@@ -185,7 +185,7 @@ export const SignInPage = () => {
 
               {!isAuthConfigured ? (
                 <div className="rounded-3xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm leading-6 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
-                  Add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in your local `.env` file to enable email verification.
+                  Add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in `.env` to enable email verification.
                 </div>
               ) : null}
 
@@ -201,7 +201,7 @@ export const SignInPage = () => {
                 </p>
               ) : (
                 <p className="text-sm text-slate-500 dark:text-slate-400">
-                  No password required. Once verified, you&apos;ll continue straight into FocusFlow.
+                  No password needed. Once verified, you&apos;ll continue straight into FocusFlow.
                 </p>
               )}
 

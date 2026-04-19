@@ -162,14 +162,14 @@ export const SettingsPage = () => {
     <DashboardContainer className="max-w-3xl">
       <SectionContainer
         title="Profile & Settings"
-        description="Manage your academic profile, verified email, subjects, study timings, and goals."
+        description="Keep your profile, subjects, study timings, and goals aligned with how you actually study."
       >
         <form onSubmit={handleSubmit} className="space-y-4">
           <Card className="space-y-5 p-5 sm:p-6">
             <div className="space-y-1">
               <h3 className="text-xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">Profile</h3>
               <p className="text-sm leading-6 text-slate-500 dark:text-slate-400">
-                Keep your academic profile current while your verified email remains the sign-in identity for this device.
+                Keep your study profile current while your verified email remains the sign-in identity for this device.
               </p>
             </div>
 
@@ -283,7 +283,7 @@ export const SettingsPage = () => {
             <div className="space-y-1">
               <h3 className="text-xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">Subjects</h3>
               <p className="text-sm leading-6 text-slate-500 dark:text-slate-400">
-                Add one subject per line or use commas. Your timer, history, and analytics all use this list.
+                Add one subject per line or use commas. The same list powers your timer, history, and analytics.
               </p>
             </div>
 
@@ -318,7 +318,7 @@ export const SettingsPage = () => {
             <div className="space-y-1">
               <h3 className="text-xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">Goals</h3>
               <p className="text-sm leading-6 text-slate-500 dark:text-slate-400">
-                Add one goal per line. Reuse the same goal text in the timer to track progress.
+                Add one goal per line. Reuse the same goal text in the timer to track progress automatically.
               </p>
             </div>
 

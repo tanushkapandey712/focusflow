@@ -13,7 +13,7 @@ const navItems = [
 
 export const Sidebar = () => (
   <aside className="hidden w-[19rem] px-4 py-5 lg:block">
-    <div className="soft-surface animate-fade-up h-full p-5">
+    <div className="soft-surface animate-fade-up flex h-full flex-col p-5">
       <div className="mb-8 flex items-center gap-3">
         <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-slate-950 via-brand-700 to-sky-400 text-white shadow-soft">
           <Sparkles size={18} />
@@ -23,6 +23,13 @@ export const Sidebar = () => (
           <p className="text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Calm workspace</p>
         </div>
       </div>
+
+      <div className="mb-3 px-1">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+          Workspace
+        </p>
+      </div>
+
       <nav className="space-y-2">
         {navItems.map(({ to, label, icon: Icon }) => (
           <NavLink
@@ -30,8 +37,8 @@ export const Sidebar = () => (
             to={to}
             className={({ isActive }) =>
               cn(
-                "group flex items-center gap-3 rounded-2xl px-3.5 py-3 text-sm font-medium text-slate-600 transition duration-300 hover:bg-white/72 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-surface-800 dark:hover:text-white",
-                isActive && "bg-white/92 text-slate-900 shadow-soft dark:bg-surface-800 dark:text-white",
+                "group flex items-center gap-3 rounded-[1.4rem] px-3.5 py-3 text-sm font-medium text-slate-600 transition duration-300 hover:bg-white/76 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-surface-800 dark:hover:text-white",
+                isActive && "bg-white/92 text-slate-900 shadow-soft ring-1 ring-white/60 dark:bg-surface-800 dark:text-white dark:ring-white/5",
               )
             }
           >
@@ -42,6 +49,18 @@ export const Sidebar = () => (
           </NavLink>
         ))}
       </nav>
+
+      <div className="mt-auto rounded-[1.55rem] border border-white/80 bg-white/68 p-4 shadow-soft dark:border-white/10 dark:bg-surface-900/65">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+          Study Style
+        </p>
+        <p className="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
+          Keep the flow clean.
+        </p>
+        <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
+          Timer, focus cues, analytics, and history stay in one calm workspace.
+        </p>
+      </div>
     </div>
   </aside>
 );

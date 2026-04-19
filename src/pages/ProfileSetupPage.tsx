@@ -119,7 +119,7 @@ export const ProfileSetupPage = () => {
                   Set up your study workspace.
                 </h1>
                 <p className="max-w-xl text-base leading-7 text-slate-600">
-                  Add the details that shape your subjects, schedule, and study recommendations.
+                  Add the details that shape your subjects, schedule, and study suggestions.
                 </p>
               </div>
 
@@ -127,7 +127,7 @@ export const ProfileSetupPage = () => {
                 {[
                   ["Verified email", profile.email ?? "Connected securely"],
                   ["Subjects", "Used across the timer, history, and analytics."],
-                  ["Routine", "Your study hours keep the app grounded in your day."],
+                  ["Routine", "Your schedule keeps the workspace grounded in your day."],
                 ].map(([label, text]) => (
                   <div key={label} className="rounded-3xl bg-white/70 p-4 shadow-soft">
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">{label}</p>
@@ -194,7 +194,7 @@ export const ProfileSetupPage = () => {
                 </label>
 
                 <div className="rounded-3xl border border-dashed border-slate-200 bg-slate-50/80 px-4 py-3 text-sm leading-6 text-slate-500 dark:border-white/10 dark:bg-slate-900/70 dark:text-slate-300">
-                  Your profile will say {trimmedName || "your name"} in {trimmedClassOrCourse || classOrCourseLabel.toLowerCase()}.
+                  Your profile will show {trimmedName || "your name"} in {trimmedClassOrCourse || classOrCourseLabel.toLowerCase()}.
                 </div>
 
                 <label className="space-y-1.5">
@@ -261,7 +261,7 @@ export const ProfileSetupPage = () => {
                 </p>
               ) : (
                 <p className="text-sm text-slate-500 dark:text-slate-400">
-                  You can refine any of these details later in settings.
+                  You can refine all of this later in settings.
                 </p>
               )}
 

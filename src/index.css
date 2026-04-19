@@ -12,13 +12,25 @@
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    scroll-behavior: smooth;
   }
 
   body {
     margin: 0;
     min-width: 320px;
     min-height: 100vh;
+    background-image:
+      radial-gradient(circle at top left, rgba(99, 102, 241, 0.08), transparent 26rem),
+      radial-gradient(circle at top right, rgba(56, 189, 248, 0.08), transparent 24rem),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.7), rgba(247, 248, 255, 0));
     @apply bg-surface-50 text-slate-900 dark:bg-surface-900 dark:text-slate-100;
+  }
+
+  .dark body {
+    background-image:
+      radial-gradient(circle at top left, rgba(99, 102, 241, 0.14), transparent 24rem),
+      radial-gradient(circle at top right, rgba(34, 211, 238, 0.08), transparent 22rem),
+      linear-gradient(180deg, rgba(15, 23, 42, 0.28), rgba(15, 23, 42, 0));
   }
 
   h1,
@@ -31,23 +43,28 @@
   #root {
     min-height: 100vh;
   }
+
+  ::selection {
+    background: rgba(79, 70, 229, 0.18);
+    color: inherit;
+  }
 }
 
 @layer components {
   .soft-surface {
-    @apply rounded-3xl border border-white/70 bg-white/80 shadow-panel backdrop-blur-xl dark:border-white/10 dark:bg-surface-800/80 dark:shadow-neumorph-dark;
+    @apply relative isolate rounded-[1.9rem] border border-white/80 bg-white/75 shadow-panel backdrop-blur-2xl transition-[transform,box-shadow,border-color,background-color] duration-300 dark:border-white/10 dark:bg-surface-800/80 dark:shadow-neumorph-dark;
   }
 
   .hover-lift {
-    @apply transition duration-300 ease-out motion-safe:hover:-translate-y-1 motion-safe:hover:shadow-panel;
+    @apply transition duration-300 ease-out motion-safe:hover:-translate-y-0.5 motion-safe:hover:border-white motion-safe:hover:shadow-panel;
   }
 
   .field-surface {
-    @apply w-full appearance-none rounded-2xl border border-white/80 bg-white/80 px-3.5 py-3 text-sm text-slate-800 shadow-sm outline-none transition duration-200 placeholder:text-slate-400 focus:border-brand-500 focus:ring-4 focus:ring-brand-100/70 dark:border-white/10 dark:bg-surface-900/70 dark:text-slate-100 dark:placeholder:text-slate-500;
+    @apply w-full appearance-none rounded-[1.35rem] border border-white/80 bg-white/85 px-4 py-3 text-sm text-slate-800 shadow-sm outline-none transition duration-200 placeholder:text-slate-400 focus:border-brand-500 focus:bg-white focus:ring-4 focus:ring-brand-100/70 dark:border-white/10 dark:bg-surface-900/70 dark:text-slate-100 dark:placeholder:text-slate-500;
   }
 
   .surface-pill {
-    @apply rounded-full border border-white/70 bg-white/70 shadow-soft backdrop-blur dark:border-white/10 dark:bg-surface-800/80;
+    @apply rounded-full border border-white/80 bg-white/75 shadow-soft backdrop-blur transition-colors duration-300 dark:border-white/10 dark:bg-surface-800/80;
   }
 
   .page-intro {
@@ -63,7 +80,7 @@
   }
 
   .page-copy {
-    @apply max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300 sm:text-base;
+    @apply max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300 sm:text-[1.02rem];
   }
 }
 
@@ -71,6 +88,21 @@
   .text-balance {
     text-wrap: balance;
   }
+}
+
+.soft-surface::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.36), transparent 34%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.24), transparent 28%);
+  pointer-events: none;
+}
+
+.soft-surface > * {
+  position: relative;
+  z-index: 1;
 }
 
 @media (prefers-reduced-motion: reduce) {

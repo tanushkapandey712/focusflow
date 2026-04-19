@@ -44,7 +44,6 @@ export const FocusSnapshotCard = ({
   const statusTone = isCameraActive ? statusToneMap[attentionStatus] : statusToneMap.inactive;
   const items = [
     { label: "Status", value: currentStatus },
-    { label: "Attention", value: isCameraActive ? `${attentionScore}/100` : "--" },
     { label: "Distractions", value: String(distractionCount) },
     { label: "Away Time", value: formatDurationLabel(awayTimeMs) },
     { label: "Focus Streak", value: formatDurationLabel(focusStreakMs) },
@@ -53,8 +52,8 @@ export const FocusSnapshotCard = ({
   return (
     <Card className="animate-fade-up overflow-hidden p-5 sm:p-6">
       <div className="space-y-5">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div>
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="max-w-2xl">
             <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">
               Focus Snapshot
             </p>
@@ -62,24 +61,35 @@ export const FocusSnapshotCard = ({
               Live attention at a glance
             </h3>
             <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-              A light read on your current tracking state without changing the rest of the dashboard.
+              A compact read on your current study state without pulling attention away from the rest of the dashboard.
             </p>
           </div>
-          <span
-            className={cn(
-              "inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em]",
-              statusTone,
-            )}
-          >
-            {isCameraActive ? "Live Tracking" : "Camera Off"}
-          </span>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="rounded-[1.4rem] border border-white/80 bg-white/75 px-4 py-3 shadow-soft dark:border-white/10 dark:bg-surface-900/65">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                Attention Score
+              </p>
+              <p className="mt-2 text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
+                {isCameraActive ? `${attentionScore}/100` : "--"}
+              </p>
+            </div>
+            <span
+              className={cn(
+                "inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em]",
+                statusTone,
+              )}
+            >
+              {isCameraActive ? "Live Tracking" : "Camera Off"}
+            </span>
+          </div>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {items.map((item) => (
             <div
               key={item.label}
-              className="rounded-[1.5rem] bg-slate-50/88 p-4 shadow-soft dark:bg-surface-900/70"
+              className="rounded-[1.5rem] bg-slate-50/88 p-4 shadow-soft ring-1 ring-white/70 dark:bg-surface-900/70 dark:ring-white/5"
             >
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
                 {item.label}
@@ -93,8 +103,8 @@ export const FocusSnapshotCard = ({
 
         <p className="text-sm text-slate-500 dark:text-slate-400">
           {isCameraActive
-            ? "This card mirrors the current camera tracking state while you study."
-            : "Start camera tracking on the timer page to see live focus updates here."}
+            ? "This card mirrors the live camera signals while you study."
+            : "Start camera tracking on the timer page whenever you want live focus updates here."}
         </p>
       </div>
     </Card>

@@ -150,6 +150,33 @@ export const WebcamPanel = ({
 }: WebcamPanelProps) => {
   const previewMessage = getPreviewMessage(tracker);
   const presenceMessage = getPresenceMessage(tracker);
+  const liveSignals = [
+    {
+      label: "Face",
+      value: tracker.faceVisible ? "Detected" : "Not detected",
+      detail: presenceMessage.detail,
+    },
+    {
+      label: "Eyes",
+      value: tracker.eyesOpen ? "Open" : tracker.faceVisible ? "Closed" : "Waiting",
+      detail: getEyeMessage(tracker),
+    },
+    {
+      label: "Head",
+      value:
+        tracker.headDirection === "centered"
+          ? "Centered"
+          : tracker.headDirection === "slightly-away"
+            ? "Slightly away"
+            : "Away",
+      detail: getHeadMessage(tracker),
+    },
+    {
+      label: "Attention",
+      value: `${tracker.attentionScore}/100`,
+      detail: tracker.attentionStatus,
+    },
+  ];
   const PreviewIcon =
     tracker.cameraState === "error" || tracker.cameraState === "denied" ? CameraOff : Camera;
 
@@ -162,10 +189,10 @@ export const WebcamPanel = ({
               Camera Focus Tracking
             </p>
             <h3 className="text-xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
-              Phase 1 attention tracking
+              Focus tracking
             </h3>
             <p className="text-sm leading-6 text-slate-600 dark:text-slate-300">
-              FocusFlow checks face presence, a lightweight eye-openness signal, and basic head direction without changing the timer flow.
+              Optional local camera cues that support the timer without changing the rest of the flow.
             </p>
           </div>
 
@@ -178,13 +205,18 @@ export const WebcamPanel = ({
         <div className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
           <div className="overflow-hidden rounded-[1.75rem] border border-slate-200/80 bg-slate-950 shadow-soft transition-colors duration-300 dark:border-white/10">
             {tracker.isCameraActive ? (
-              <video
-                ref={tracker.previewRef}
-                className="aspect-video w-full object-cover"
-                autoPlay
-                muted
-                playsInline
-              />
+              <div className="relative">
+                <video
+                  ref={tracker.previewRef}
+                  className="aspect-video w-full object-cover"
+                  autoPlay
+                  muted
+                  playsInline
+                />
+                <div className="absolute left-4 top-4 rounded-full bg-slate-950/55 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/88 backdrop-blur">
+                  Local only
+                </div>
+              </div>
             ) : (
               <div className="flex aspect-video items-center justify-center px-6 text-center">
                 <div className="space-y-2">
@@ -246,24 +278,38 @@ export const WebcamPanel = ({
             </div>
 
             <div className="rounded-[1.5rem] border border-slate-200/80 bg-slate-50/85 p-4 transition-colors duration-300 dark:border-white/10 dark:bg-surface-900/65">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
-                Presence Signal
-              </p>
-              <p className="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100">
-                {presenceMessage.title}
-              </p>
-              <p className="mt-2 text-xs leading-6 text-slate-500 dark:text-slate-400">
-                {presenceMessage.detail}
-              </p>
-              <p className="mt-2 text-xs leading-6 text-slate-500 dark:text-slate-400">
-                {getEyeMessage(tracker)}
-              </p>
-              <p className="mt-2 text-xs leading-6 text-slate-500 dark:text-slate-400">
-                {getHeadMessage(tracker)}
-              </p>
-              <p className="mt-2 text-xs leading-6 text-slate-500 dark:text-slate-400">
-                Attention score {tracker.attentionScore}/100 with live status {tracker.attentionStatus}.
-              </p>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                    Live Signals
+                  </p>
+                  <p className="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                    {presenceMessage.title}
+                  </p>
+                </div>
+                <span className="surface-pill px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-600 dark:text-slate-300">
+                  Phase 1
+                </span>
+              </div>
+
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                {liveSignals.map((signal) => (
+                  <div
+                    key={signal.label}
+                    className="rounded-[1.2rem] bg-white/78 p-3 shadow-soft ring-1 ring-white/60 dark:bg-surface-950/45 dark:ring-white/5"
+                  >
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                      {signal.label}
+                    </p>
+                    <p className="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                      {signal.value}
+                    </p>
+                    <p className="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">
+                      {signal.detail}
+                    </p>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -279,7 +325,7 @@ export const WebcamPanel = ({
           </p>
         ) : (
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            The camera feature is optional. It scores face presence, eye openness, and head direction locally while keeping the timer workflow unchanged.
+            Camera tracking stays optional and runs locally so the timer workflow remains simple.
           </p>
         )}
       </div>

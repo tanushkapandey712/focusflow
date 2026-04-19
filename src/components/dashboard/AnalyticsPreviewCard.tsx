@@ -27,7 +27,7 @@ export const AnalyticsPreviewCard = ({ points }: AnalyticsPreviewCardProps) => {
             </div>
           </div>
 
-          <div className="rounded-[1.75rem] bg-gradient-to-b from-white to-slate-50/90 p-4 shadow-soft dark:from-surface-900 dark:to-surface-800">
+          <div className="rounded-[1.75rem] bg-gradient-to-b from-white to-slate-50/90 p-4 shadow-soft ring-1 ring-white/70 dark:from-surface-900 dark:to-surface-800 dark:ring-white/5">
             <div className="flex h-40 items-end gap-3">
               {points.map((value, idx) => (
                 <div key={`${value}-${idx}`} className="flex flex-1 flex-col items-center justify-end gap-2">
@@ -42,6 +42,12 @@ export const AnalyticsPreviewCard = ({ points }: AnalyticsPreviewCardProps) => {
               ))}
             </div>
           </div>
+
+          <p className="text-sm leading-6 text-slate-500 dark:text-slate-400">
+            {average >= 45
+              ? "Consistency is holding up well. Keep the same start time if it still feels natural."
+              : "Your week is still forming. One clean session today can lift the whole pattern."}
+          </p>
         </div>
 
         <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
@@ -50,7 +56,10 @@ export const AnalyticsPreviewCard = ({ points }: AnalyticsPreviewCardProps) => {
             { label: "Average", value: `${average}m` },
             { label: "Best Day", value: `${best}m` },
           ].map((item) => (
-            <div key={item.label} className="rounded-[1.5rem] bg-slate-50/88 p-4 shadow-soft dark:bg-surface-900/70">
+            <div
+              key={item.label}
+              className="rounded-[1.5rem] bg-slate-50/88 p-4 shadow-soft ring-1 ring-white/70 dark:bg-surface-900/70 dark:ring-white/5"
+            >
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">{item.label}</p>
               <p className="mt-2 text-xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">{item.value}</p>
             </div>
