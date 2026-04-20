@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { Camera, CameraOff } from "lucide-react";
 import { DashboardContainer } from "../components/dashboard/DashboardContainer";
 import { FocusStatusBadge } from "../components/focus/FocusStatusBadge";
@@ -6,7 +6,7 @@ import { Button, GradientCard, SectionContainer } from "../components/ui";
 import { formatTimer } from "../features/timer/format";
 import { TimerCard } from "../features/timer/TimerCard";
 import { TIMER_PRESETS } from "../features/timer/types";
-import { useStudyTimer } from "../features/timer/useStudyTimer";
+import { useStudyTimerSession } from "../features/timer/useStudyTimerSession";
 import { useFocusFlowData } from "../hooks/useFocusFlowData";
 import { useFocusTracking } from "../hooks/useFocusTracking";
 import {
@@ -17,13 +17,32 @@ import {
 
 export const TimerPage = () => {
   const { subjects, addSession, updateSubject } = useFocusFlowData();
-  const [selectedSubjectId, setSelectedSubjectId] = useState(subjects[0]?.id ?? "");
-  const [selectedUnitId, setSelectedUnitId] = useState("");
-  const [selectedTopicId, setSelectedTopicId] = useState("");
-  const [goal, setGoal] = useState("");
-  const [distractionTags, setDistractionTags] = useState<string[]>([]);
-
-  const timer = useStudyTimer({ presets: TIMER_PRESETS });
+  const {
+    mode,
+    setMode,
+    status,
+    remainingSec,
+    progress,
+    customMinutes,
+    setCustomMinutes,
+    activePreset,
+    selectedSubjectId,
+    setSelectedSubjectId,
+    selectedUnitId,
+    setSelectedUnitId,
+    selectedTopicId,
+    setSelectedTopicId,
+    goal,
+    setGoal,
+    distractionTags,
+    setDistractionTags,
+    start,
+    pause,
+    resume,
+    reset,
+    end,
+    resetSessionForm,
+  } = useStudyTimerSession();
   const cameraTracking = useFocusTracking();
 
   useEffect(() => {
@@ -37,11 +56,11 @@ export const TimerPage = () => {
     if (!subjects.some((subject) => subject.id === selectedSubjectId)) {
       setSelectedSubjectId(subjects[0].id);
     }
-  }, [selectedSubjectId, subjects]);
+  }, [selectedSubjectId, setSelectedSubjectId, subjects]);
 
   const selectedSubject = useMemo(
     () => subjects.find((subject) => subject.id === selectedSubjectId),
-    [subjects, selectedSubjectId],
+    [selectedSubjectId, subjects],
   );
   const availableUnits = useMemo(
     () => selectedSubject?.syllabusUnits ?? [],
@@ -74,13 +93,17 @@ export const TimerPage = () => {
     if (nextSelection.topicId !== selectedTopicId) {
       setSelectedTopicId(nextSelection.topicId);
     }
-  }, [selectedSubject, selectedTopicId, selectedUnitId]);
+  }, [selectedSubject, selectedTopicId, selectedUnitId, setSelectedTopicId, setSelectedUnitId]);
 
   const handleEndSession = () => {
     if (!selectedSubject) return;
-    const result = timer.end();
+    const result = end();
     const endedAtIso = result.endedAt.toISOString();
-    const syllabusTopic = getSessionSyllabusLink(selectedSubject, selectedUnitId, selectedTopicId);
+    const syllabusTopic = getSessionSyllabusLink(
+      selectedSubject,
+      selectedUnitId,
+      selectedTopicId,
+    );
     const focusTrackingSummary = cameraTracking.finishSessionTracking({
       startedAt: result.startedAt,
       endedAt: result.endedAt,
@@ -125,8 +148,7 @@ export const TimerPage = () => {
       });
     }
 
-    setGoal("");
-    setDistractionTags([]);
+    resetSessionForm();
   };
 
   return (
@@ -153,26 +175,26 @@ export const TimerPage = () => {
           distractionTags={distractionTags}
           onDistractionTagsChange={setDistractionTags}
           presets={TIMER_PRESETS}
-          mode={timer.mode}
-          onModeChange={timer.setMode}
-          customMinutes={timer.customMinutes}
-          onCustomMinutesChange={timer.setCustomMinutes}
-          timerText={formatTimer(timer.remainingSec)}
-          status={timer.status}
-          progress={timer.progress}
-          accent={timer.activePreset.accent}
+          mode={mode}
+          onModeChange={setMode}
+          customMinutes={customMinutes}
+          onCustomMinutesChange={setCustomMinutes}
+          timerText={formatTimer(remainingSec)}
+          status={status}
+          progress={progress}
+          accent={activePreset.accent}
           onStart={() => {
             if (!selectedSubject) return;
             setDistractionTags([]);
             cameraTracking.beginSessionTracking();
-            timer.start();
+            start();
           }}
-          onPause={timer.pause}
-          onResume={timer.resume}
+          onPause={pause}
+          onResume={resume}
           onEnd={handleEndSession}
           onReset={() => {
             cameraTracking.resetSessionTracking();
-            timer.reset();
+            reset();
           }}
         />
       </SectionContainer>

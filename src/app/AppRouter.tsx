@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { RequireSignedIn } from "../components/auth/RequireSignedIn";
 import { AppLayout } from "../components/layout/AppLayout";
+import { StudyTimerProvider } from "../features/timer/StudyTimerProvider";
 import { FocusTrackingProvider } from "../hooks/FocusTrackingProvider";
 import { AnalyticsPage } from "../pages/AnalyticsPage";
 import { DashboardPage } from "../pages/DashboardPage";
@@ -23,7 +24,9 @@ export const AppRouter = () => (
       <Route
         element={
           <FocusTrackingProvider>
-            <AppLayout />
+            <StudyTimerProvider>
+              <AppLayout />
+            </StudyTimerProvider>
           </FocusTrackingProvider>
         }
       >

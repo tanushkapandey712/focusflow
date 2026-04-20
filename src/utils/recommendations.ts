@@ -1,5 +1,6 @@
 import type { RecommendationItem, StudySession, Subject } from "../types/models";
 import { getSyllabusTopicStatus } from "./syllabus";
+import { getSyllabusCompletionSummary } from "./syllabusProgress";
 
 const RECENT_SESSION_COUNT = 4;
 const PREVIOUS_SESSION_COUNT = 4;
@@ -42,6 +43,25 @@ interface TopicTarget {
   recentMinutes: number;
   totalMinutes: number;
   lastStudiedAt?: string;
+}
+
+export interface SyllabusDashboardInsights {
+  completionPercent: number;
+  coveredTopics: number;
+  totalTopics: number;
+  neglectedSubject?: {
+    subjectName: string;
+    topicTitle: string;
+    daysSinceLastStudy?: number;
+  };
+  nextRecommendedTopic?: {
+    subjectName: string;
+    unitTitle: string;
+    topicTitle: string;
+    topicStatus: TopicTarget["topicStatus"];
+    reason: "exam_priority" | "neglected_subject" | "momentum";
+    examDaysAway?: number;
+  };
 }
 
 const getStatusMessage = (status: TopicTarget["topicStatus"]) => {
@@ -139,6 +159,9 @@ const getBreakMessage = (recentSessions: StudySession[], distractions: number) =
 const getDaysUntil = (isoDate: string, now: Date) =>
   Math.ceil((new Date(isoDate).getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 
+const getDaysSince = (isoDate: string, now: Date) =>
+  Math.floor((now.getTime() - new Date(isoDate).getTime()) / (1000 * 60 * 60 * 24));
+
 const getNextOpenTopic = (subject: Subject) => {
   for (const unit of subject.syllabusUnits) {
     for (const topic of unit.topics) {
@@ -228,6 +251,64 @@ const getNeglectedSubjectSuggestion = (targets: TopicTarget[], now: Date) =>
 
 const getMomentumTopicSuggestion = (targets: TopicTarget[]) =>
   [...targets].sort((a, b) => b.totalMinutes - a.totalMinutes || a.recentMinutes - b.recentMinutes)[0];
+
+export const getSyllabusDashboardInsights = (
+  subjects: Subject[],
+  sessions: StudySession[],
+  now = new Date(),
+): SyllabusDashboardInsights => {
+  const completion = getSyllabusCompletionSummary(subjects);
+  const targets = buildTopicTargets(subjects, sessions, now);
+  const examPriority = getExamPrioritySuggestion(targets);
+  const neglectedTarget = getNeglectedSubjectSuggestion(targets, now);
+  const momentumTarget = getMomentumTopicSuggestion(targets);
+
+  let nextRecommendedTopic: SyllabusDashboardInsights["nextRecommendedTopic"];
+
+  if (examPriority) {
+    nextRecommendedTopic = {
+      subjectName: examPriority.subjectName,
+      unitTitle: examPriority.unitTitle,
+      topicTitle: examPriority.topicTitle,
+      topicStatus: examPriority.topicStatus,
+      reason: "exam_priority",
+      examDaysAway: examPriority.examDaysAway,
+    };
+  } else if (neglectedTarget) {
+    nextRecommendedTopic = {
+      subjectName: neglectedTarget.subjectName,
+      unitTitle: neglectedTarget.unitTitle,
+      topicTitle: neglectedTarget.topicTitle,
+      topicStatus: neglectedTarget.topicStatus,
+      reason: "neglected_subject",
+    };
+  } else if (momentumTarget) {
+    nextRecommendedTopic = {
+      subjectName: momentumTarget.subjectName,
+      unitTitle: momentumTarget.unitTitle,
+      topicTitle: momentumTarget.topicTitle,
+      topicStatus: momentumTarget.topicStatus,
+      reason: "momentum",
+      examDaysAway: momentumTarget.examDaysAway,
+    };
+  }
+
+  return {
+    completionPercent: completion.completionPercent,
+    coveredTopics: completion.coveredTopics,
+    totalTopics: completion.totalTopics,
+    neglectedSubject: neglectedTarget
+      ? {
+          subjectName: neglectedTarget.subjectName,
+          topicTitle: neglectedTarget.topicTitle,
+          daysSinceLastStudy: neglectedTarget.lastStudiedAt
+            ? getDaysSince(neglectedTarget.lastStudiedAt, now)
+            : undefined,
+        }
+      : undefined,
+    nextRecommendedTopic,
+  };
+};
 
 const formatDayLabel = (days: number) => {
   if (days === 0) {

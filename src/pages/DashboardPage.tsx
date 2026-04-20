@@ -5,11 +5,12 @@ import { FocusSnapshotCard } from "../components/dashboard/FocusSnapshotCard";
 import { GreetingSection } from "../components/dashboard/GreetingSection";
 import { StatsSection } from "../components/dashboard/StatsSection";
 import { SuggestionsCard } from "../components/dashboard/SuggestionsCard";
+import { SyllabusInsightsCard } from "../components/dashboard/SyllabusInsightsCard";
 import { TimerSectionCard } from "../components/dashboard/TimerSectionCard";
 import { useFocusFlowData } from "../hooks/useFocusFlowData";
 import { useFocusTracking } from "../hooks/useFocusTracking";
 import { formatMinutes } from "../utils/date";
-import { generateRecommendations } from "../utils/recommendations";
+import { generateRecommendations, getSyllabusDashboardInsights } from "../utils/recommendations";
 import {
   getSubjectStudyBreakdown,
   getSyllabusCompletionSummary,
@@ -45,6 +46,10 @@ export const DashboardPage = () => {
     () => getSyllabusCompletionSummary(subjects),
     [subjects],
   );
+  const syllabusInsights = useMemo(
+    () => getSyllabusDashboardInsights(subjects, sessions),
+    [subjects, sessions],
+  );
   const topSubject = subjectBreakdown[0];
 
   return (
@@ -64,6 +69,8 @@ export const DashboardPage = () => {
             : "Add topics in Syllabus Map"
         }
       />
+
+      <SyllabusInsightsCard insights={syllabusInsights} />
 
       <FocusSnapshotCard
         isCameraActive={focusTracking.isCameraActive}

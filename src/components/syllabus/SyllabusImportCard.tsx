@@ -1,7 +1,8 @@
-import { useMemo, useState } from "react";
-import { ChevronDown, ChevronUp, FileInput, PencilLine, Plus, Trash2 } from "lucide-react";
+import { useMemo, useRef, useState, type ChangeEvent } from "react";
+import { ChevronDown, ChevronUp, FileInput, PencilLine, Plus, Trash2, Upload } from "lucide-react";
 import { Button, Card } from "../ui";
 import type { Subject, SyllabusUnit } from "../../types/models";
+import { extractTextFromPdfFile } from "../../utils/pdfImport";
 import { createSyllabusTopic, createSyllabusUnit } from "../../utils/syllabus";
 import {
   moveListItem,
@@ -23,9 +24,13 @@ export const SyllabusImportCard = ({ subjects, onSaveImport }: SyllabusImportCar
   const [newSubjectName, setNewSubjectName] = useState("");
   const [rawText, setRawText] = useState("");
   const [error, setError] = useState("");
+  const [pdfStatus, setPdfStatus] = useState<string>("");
+  const [isExtractingPdf, setIsExtractingPdf] = useState(false);
   const [reviewUnits, setReviewUnits] = useState<SyllabusUnit[] | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const usesNewSubject = targetSubjectId === NEW_SUBJECT_VALUE;
+  const hasPreviewText = rawText.trim().length > 0;
 
   const helperText = useMemo(() => {
     if (usesNewSubject) {
@@ -39,6 +44,50 @@ export const SyllabusImportCard = ({ subjects, onSaveImport }: SyllabusImportCar
     setRawText("");
     setReviewUnits(null);
     setError("");
+    setPdfStatus("");
+  };
+
+  const handlePdfSelected = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    event.target.value = "";
+    setError("");
+    setPdfStatus("");
+    setReviewUnits(null);
+
+    if (
+      file.type !== "application/pdf" &&
+      !file.name.toLowerCase().endsWith(".pdf")
+    ) {
+      setError("Choose a PDF file to extract syllabus text.");
+      return;
+    }
+
+    setIsExtractingPdf(true);
+
+    try {
+      const extractedText = await extractTextFromPdfFile(file);
+
+      if (!extractedText.trim()) {
+        setError("We could not extract readable text from that PDF.");
+        return;
+      }
+
+      setRawText(extractedText);
+      setPdfStatus(`Extracted text from ${file.name}. Review and edit it below before parsing.`);
+    } catch (pdfError) {
+      setError(
+        pdfError instanceof Error
+          ? pdfError.message
+          : "We could not read that PDF right now. Try another file or paste the text manually.",
+      );
+    } finally {
+      setIsExtractingPdf(false);
+    }
   };
 
   const handleParse = () => {
@@ -162,10 +211,10 @@ export const SyllabusImportCard = ({ subjects, onSaveImport }: SyllabusImportCar
             Syllabus Import
           </div>
           <h2 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
-            Paste and review syllabus text
+            Upload, preview, and parse syllabus text
           </h2>
           <p className="text-sm leading-6 text-slate-600 dark:text-slate-300">
-            Paste raw syllabus text, let FocusFlow organize it into units and topics, then review everything before saving.
+            Upload a PDF or paste text, preview and edit the extracted content, then parse it into units and topics before saving.
           </p>
         </div>
 
@@ -208,12 +257,41 @@ export const SyllabusImportCard = ({ subjects, onSaveImport }: SyllabusImportCar
             ) : null}
 
             <label className="space-y-1.5">
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Paste syllabus text</span>
+              <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                Preview and edit text
+              </span>
+              <div className="flex flex-wrap gap-2">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="application/pdf,.pdf"
+                  onChange={handlePdfSelected}
+                  className="hidden"
+                />
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isExtractingPdf}
+                >
+                  <Upload size={15} />
+                  {isExtractingPdf ? "Extracting PDF..." : "Upload PDF"}
+                </Button>
+                <p className="text-xs leading-6 text-slate-500 dark:text-slate-400">
+                  Upload a syllabus PDF or paste text directly. The extracted text stays editable here before parsing.
+                </p>
+              </div>
+              {hasPreviewText ? (
+                <p className="text-xs leading-6 text-slate-500 dark:text-slate-400">
+                  This raw text preview is fully editable. Any changes you make here are what FocusFlow will parse.
+                </p>
+              ) : null}
               <textarea
                 value={rawText}
                 onChange={(event) => {
                   setRawText(event.target.value);
                   setError("");
+                  setPdfStatus("");
                 }}
                 rows={10}
                 placeholder={"Unit 1: Algebra\nLinear equations\nPolynomials\n\nUnit 2: Geometry\nTriangles\nCircles"}
@@ -224,7 +302,7 @@ export const SyllabusImportCard = ({ subjects, onSaveImport }: SyllabusImportCar
             <div className="flex flex-wrap gap-2">
               <Button onClick={handleParse}>
                 <PencilLine size={15} />
-                Parse for review
+                Parse Syllabus
               </Button>
               {reviewUnits ? (
                 <Button variant="secondary" onClick={resetImportState}>
@@ -235,6 +313,8 @@ export const SyllabusImportCard = ({ subjects, onSaveImport }: SyllabusImportCar
 
             {error ? (
               <p className="text-sm text-rose-600 dark:text-rose-300">{error}</p>
+            ) : pdfStatus ? (
+              <p className="text-xs leading-6 text-slate-500 dark:text-slate-400">{pdfStatus}</p>
             ) : (
               <p className="text-xs leading-6 text-slate-500 dark:text-slate-400">{helperText}</p>
             )}
@@ -261,7 +341,7 @@ export const SyllabusImportCard = ({ subjects, onSaveImport }: SyllabusImportCar
 
               {!reviewUnits ? (
                 <p className="mt-4 text-sm leading-6 text-slate-500 dark:text-slate-300">
-                  Parse the pasted text first. Saving is only enabled after you review the imported structure.
+                  Upload or paste text first, preview it in the editor, then parse it. Saving is only enabled after you review the imported structure.
                 </p>
               ) : (
                 <div className="mt-4 space-y-3">
