@@ -5,6 +5,11 @@ import type {
   SyllabusUnit,
 } from "../types/models";
 
+export interface NextSyllabusTopicMatch {
+  unit: SyllabusUnit;
+  topic: SyllabusTopic;
+}
+
 const createNodeId = () =>
   typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
     ? crypto.randomUUID()
@@ -108,6 +113,28 @@ export const getUnitCompletionPercent = (unit: SyllabusUnit) => {
 
   const totalProgress = unit.topics.reduce((sum, topic) => sum + getTopicProgressPercent(topic), 0);
   return Math.round(totalProgress / unit.topics.length);
+};
+
+export const getUnitCoveredTopicCount = (unit: SyllabusUnit) =>
+  unit.topics.filter((topic) => isSyllabusTopicCovered(topic)).length;
+
+export const getNextTopicToStudy = (topics: SyllabusTopic[]) =>
+  topics.find((topic) => getSyllabusTopicStatus(topic) === "in_progress") ??
+  topics.find((topic) => getSyllabusTopicStatus(topic) === "not_started") ??
+  null;
+
+export const getNextSubjectTopicToStudy = (subject: Subject): NextSyllabusTopicMatch | null => {
+  for (const status of ["in_progress", "not_started"] as const) {
+    for (const unit of subject.syllabusUnits) {
+      const topic = unit.topics.find((entry) => getSyllabusTopicStatus(entry) === status);
+
+      if (topic) {
+        return { unit, topic };
+      }
+    }
+  }
+
+  return null;
 };
 
 export const getSubjectCompletionPercent = (subject: Subject) => {
