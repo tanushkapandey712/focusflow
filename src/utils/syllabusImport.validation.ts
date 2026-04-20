@@ -41,6 +41,109 @@ const compareUnits = (actual: ExpectedParsedUnit[], expected: ExpectedParsedUnit
 
 export const SYLLABUS_PARSER_VALIDATION_CASES: SyllabusParserValidationCase[] = [
   {
+    name: "reported bug: one topic per line under Unit 1 Algebra",
+    rawInput: `Unit 1: Algebra
+Linear equations
+Polynomials
+Matrices`,
+    expectedParsedUnits: [
+      {
+        title: "Unit 1: Algebra",
+        topics: ["Linear equations", "Polynomials", "Matrices"],
+      },
+    ],
+    expectedTopicArrays: [["Linear equations", "Polynomials", "Matrices"]],
+  },
+  {
+    name: "reported bug: comma-separated geometry topics",
+    rawInput: `Unit 2: Geometry
+Triangles, Circles, Coordinate Geometry`,
+    expectedParsedUnits: [
+      {
+        title: "Unit 2: Geometry",
+        topics: ["Triangles", "Circles", "Coordinate Geometry"],
+      },
+    ],
+    expectedTopicArrays: [["Triangles", "Circles", "Coordinate Geometry"]],
+  },
+  {
+    name: "reported bug: plain ODE lines stay topics under one unit",
+    rawInput: `Unit 1: Ordinary Differential Equations
+Solution of linear differential equations of nth order with constant coefficients
+Simultaneous linear differential equations
+Reduction of order
+Normal form`,
+    expectedParsedUnits: [
+      {
+        title: "Unit 1: Ordinary Differential Equations",
+        topics: [
+          "Solution of linear differential equations of nth order with constant coefficients",
+          "Simultaneous linear differential equations",
+          "Reduction of order",
+          "Normal form",
+        ],
+      },
+    ],
+    expectedTopicArrays: [
+      [
+        "Solution of linear differential equations of nth order with constant coefficients",
+        "Simultaneous linear differential equations",
+        "Reduction of order",
+        "Normal form",
+      ],
+    ],
+  },
+  {
+    name: "reported bug: series solution topics split safely",
+    rawInput: `Unit 5: Series Solution and Special Functions
+Series solution of second order ordinary differential equations with variable coefficient (Frobenius method), Bessel and Legendre equations and their series solutions, Properties of Bessel function and Legendre polynomials.`,
+    expectedParsedUnits: [
+      {
+        title: "Unit 5: Series Solution and Special Functions",
+        topics: [
+          "Series solution of second order ordinary differential equations with variable coefficient (Frobenius method)",
+          "Bessel and Legendre equations and their series solutions",
+          "Properties of Bessel function and Legendre polynomials",
+        ],
+      },
+    ],
+    expectedTopicArrays: [
+      [
+        "Series solution of second order ordinary differential equations with variable coefficient (Frobenius method)",
+        "Bessel and Legendre equations and their series solutions",
+        "Properties of Bessel function and Legendre polynomials",
+      ],
+    ],
+  },
+  {
+    name: "reported bug: messy PDF spacing still parses sensibly",
+    rawInput: `  Unit 1 :  Algebra
+
+Linear
+equations
+Polynomials
+
+
+Unit-2:   Geometry
+Triangles,   Circles
+Coordinate
+ Geometry`,
+    expectedParsedUnits: [
+      {
+        title: "Unit 1: Algebra",
+        topics: ["Linear equations", "Polynomials"],
+      },
+      {
+        title: "Unit 2: Geometry",
+        topics: ["Triangles", "Circles", "Coordinate Geometry"],
+      },
+    ],
+    expectedTopicArrays: [
+      ["Linear equations", "Polynomials"],
+      ["Triangles", "Circles", "Coordinate Geometry"],
+    ],
+  },
+  {
     name: "one-topic-per-line under a unit",
     rawInput: `Unit 1: Algebra
 Linear equations

@@ -20,6 +20,8 @@ const SEMICOLON_SPLIT_PATTERN = /\s*;\s*/;
 const COMMA_SPLIT_PATTERN = /\s*,\s*/;
 const COMMA_TOPIC_LIST_BLOCKER_PATTERN =
   /\b(?:include|includes|including|consists? of|such as|for example|e\.g\.|i\.e\.|namely)\b/i;
+const COMMA_FRAGMENT_BLOCKER_PATTERN =
+  /^(?:and\b|or\b|we\b|this\b|that\b|these\b|those\b|our\b|your\b|their\b|students?\b|it\b|they\b|you\b)/i;
 const TRAILING_CONNECTIVE_PATTERN =
   /\b(?:and|or|of|the|to|in|for|with|on|by|from|into|using|based|including|through)\s*$/i;
 const LOWERCASE_CONTINUATION_PATTERN =
@@ -53,6 +55,7 @@ const normalizeTopicText = (value: string) =>
   sanitizeLine(value)
     .replace(LEADING_BULLET_PATTERN, "")
     .replace(LEADING_ENUMERATION_PATTERN, "")
+    .replace(/[.;]\s*$/, "")
     .trim();
 
 const getWordCount = (value: string) => value.split(" ").filter(Boolean).length;
@@ -77,7 +80,7 @@ const startsWithTopicMarker = (value: string) => {
 };
 
 const isSentenceLikeTopicText = (value: string) =>
-  /[.!?]$/.test(value) || COMMA_TOPIC_LIST_BLOCKER_PATTERN.test(value);
+  COMMA_TOPIC_LIST_BLOCKER_PATTERN.test(value);
 
 const isReasonableCommaTopic = (segment: string, maxWords: number) => {
   const normalized = normalizeTopicText(segment);
@@ -110,7 +113,11 @@ const getSafeCommaSegments = (value: string, force = false) => {
 
   const maxWordsPerSegment = commaSegments.length >= 3 ? 18 : 8;
 
-  return commaSegments.every((segment) => isReasonableCommaTopic(segment, maxWordsPerSegment))
+  return commaSegments.every(
+    (segment) =>
+      isReasonableCommaTopic(segment, maxWordsPerSegment) &&
+      !COMMA_FRAGMENT_BLOCKER_PATTERN.test(segment),
+  )
     ? commaSegments
     : [];
 };
