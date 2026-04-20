@@ -18,10 +18,7 @@ const INLINE_ENUMERATION_SPLIT_PATTERN =
 const NEWLINE_SPLIT_PATTERN = /\n+/;
 const SEMICOLON_SPLIT_PATTERN = /\s*;\s*/;
 const COMMA_SPLIT_PATTERN = /\s*,\s*/;
-const COMMA_TOPIC_LIST_BLOCKER_PATTERN =
-  /\b(?:include|includes|including|consists? of|such as|for example|e\.g\.|i\.e\.|namely)\b/i;
-const COMMA_FRAGMENT_BLOCKER_PATTERN =
-  /^(?:and\b|or\b|we\b|this\b|that\b|these\b|those\b|our\b|your\b|their\b|students?\b|it\b|they\b|you\b)/i;
+const COMMA_FRAGMENT_BLOCKER_PATTERN = /^(?:and|or)$/i;
 const TRAILING_CONNECTIVE_PATTERN =
   /\b(?:and|or|of|the|to|in|for|with|on|by|from|into|using|based|including|through)\s*$/i;
 const LOWERCASE_CONTINUATION_PATTERN =
@@ -79,47 +76,24 @@ const startsWithTopicMarker = (value: string) => {
   );
 };
 
-const isSentenceLikeTopicText = (value: string) =>
-  COMMA_TOPIC_LIST_BLOCKER_PATTERN.test(value);
-
-const isReasonableCommaTopic = (segment: string, maxWords: number) => {
-  const normalized = normalizeTopicText(segment);
-
-  return (
-    normalized.length > 0 &&
-    getWordCount(normalized) <= maxWords &&
-    !/[.!?]$/.test(normalized)
-  );
-};
-
 const getSafeCommaSegments = (value: string, force = false) => {
   const commaSegments = splitAndSanitize(value, COMMA_SPLIT_PATTERN)
     .map(normalizeTopicText)
     .filter(Boolean);
-
-  if (commaSegments.length <= 1) {
-    return [];
-  }
+  const meaningfulSegments = commaSegments.filter(
+    (segment) =>
+      segment.length > 3 && !COMMA_FRAGMENT_BLOCKER_PATTERN.test(segment),
+  );
 
   if (force) {
-    return commaSegments;
+    return meaningfulSegments;
   }
 
-  const normalized = sanitizeLine(value);
-
-  if (isSentenceLikeTopicText(normalized)) {
+  if (meaningfulSegments.length <= 1) {
     return [];
   }
 
-  const maxWordsPerSegment = commaSegments.length >= 3 ? 18 : 8;
-
-  return commaSegments.every(
-    (segment) =>
-      isReasonableCommaTopic(segment, maxWordsPerSegment) &&
-      !COMMA_FRAGMENT_BLOCKER_PATTERN.test(segment),
-  )
-    ? commaSegments
-    : [];
+  return meaningfulSegments;
 };
 
 export const splitTopics = (
