@@ -1,4 +1,10 @@
-import type { RecommendationItem, StudySession } from "../types/models";
+import type { RecommendationItem, StudySession, Subject } from "../types/models";
+import { getSyllabusTopicStatus } from "./syllabus";
+
+const RECENT_SESSION_COUNT = 4;
+const PREVIOUS_SESSION_COUNT = 4;
+const NEGLECTED_SUBJECT_DAYS = 7;
+const EXAM_PRIORITY_DAYS = 14;
 
 const getFocusScore = (session: StudySession) =>
   Math.min(100, Math.round((session.actualMinutes / Math.max(1, session.plannedMinutes)) * 100));
@@ -25,6 +31,30 @@ interface SubjectInsight {
   recentMinutes: number;
   totalMinutes: number;
 }
+
+interface TopicTarget {
+  subjectId: string;
+  subjectName: string;
+  unitTitle: string;
+  topicTitle: string;
+  topicStatus: ReturnType<typeof getSyllabusTopicStatus>;
+  examDaysAway?: number;
+  recentMinutes: number;
+  totalMinutes: number;
+  lastStudiedAt?: string;
+}
+
+const getStatusMessage = (status: TopicTarget["topicStatus"]) => {
+  if (status === "completed") {
+    return "completed";
+  }
+
+  if (status === "in_progress") {
+    return "in progress";
+  }
+
+  return "not started";
+};
 
 const getSubjectInsights = (sessions: StudySession[], recentSessions: StudySession[]): SubjectInsight[] => {
   const recentMinutesBySubject = recentSessions.reduce<Record<string, number>>((acc, session) => {
@@ -106,51 +136,179 @@ const getBreakMessage = (recentSessions: StudySession[], distractions: number) =
   return "Take a quick reset after this block.";
 };
 
-const getSubjectMessage = (sessions: StudySession[], recentSessions: StudySession[]) => {
-  const insights = getSubjectInsights(sessions, recentSessions);
-  const recentLeader = [...insights].sort(
-    (a, b) => b.recentMinutes - a.recentMinutes || b.avgFocus - a.avgFocus || b.totalMinutes - a.totalMinutes,
-  )[0];
-  const focusLeader = [...insights].sort(
-    (a, b) => b.avgFocus - a.avgFocus || b.recentMinutes - a.recentMinutes || b.totalMinutes - a.totalMinutes,
-  )[0];
-  const lastSubject = recentSessions[0]?.subjectName;
+const getDaysUntil = (isoDate: string, now: Date) =>
+  Math.ceil((new Date(isoDate).getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 
-  if (lastSubject) {
-    const lastSubjectInsight = insights.find((item) => item.name === lastSubject);
-    if (lastSubjectInsight && lastSubjectInsight.avgFocus >= 85 && lastSubjectInsight.recentMinutes >= 45) {
-      return `Stay with ${lastSubject}. It's clicking.`;
+const getNextOpenTopic = (subject: Subject) => {
+  for (const unit of subject.syllabusUnits) {
+    for (const topic of unit.topics) {
+      if (getSyllabusTopicStatus(topic) !== "completed") {
+        return {
+          unitTitle: unit.title,
+          topic,
+        };
+      }
     }
   }
 
-  if (focusLeader && focusLeader.avgFocus >= 85) {
-    return `${focusLeader.name} deserves the next block.`;
-  }
-
-  if (recentLeader) {
-    return `Go back to ${recentLeader.name}. Momentum is there.`;
-  }
-
-  return "Pick one subject and stay with it.";
+  return undefined;
 };
 
-export const generateRecommendations = (sessions: StudySession[]): RecommendationItem[] => {
+const getLastStudiedBySubject = (subjectId: string, sessions: StudySession[]) =>
+  byMostRecent(sessions).find((session) => session.subjectId === subjectId)?.endedAt;
+
+const getSubjectMinutes = (subjectId: string, sessions: StudySession[]) =>
+  sessions
+    .filter((session) => session.subjectId === subjectId)
+    .reduce((sum, session) => sum + session.actualMinutes, 0);
+
+const getRecentMinutesBySubject = (subjectId: string, sessions: StudySession[], now: Date) => {
+  const recentCutoff = new Date(now);
+  recentCutoff.setDate(recentCutoff.getDate() - NEGLECTED_SUBJECT_DAYS);
+
+  return sessions
+    .filter((session) => session.subjectId === subjectId && new Date(session.endedAt) >= recentCutoff)
+    .reduce((sum, session) => sum + session.actualMinutes, 0);
+};
+
+const buildTopicTargets = (subjects: Subject[], sessions: StudySession[], now: Date): TopicTarget[] =>
+  subjects.reduce<TopicTarget[]>((acc, subject) => {
+    const nextOpenTopic = getNextOpenTopic(subject);
+
+    if (!nextOpenTopic) {
+      return acc;
+    }
+
+    acc.push({
+      subjectId: subject.id,
+      subjectName: subject.name,
+      unitTitle: nextOpenTopic.unitTitle,
+      topicTitle: nextOpenTopic.topic.title,
+      topicStatus: getSyllabusTopicStatus(nextOpenTopic.topic),
+      examDaysAway:
+        subject.examDate && getDaysUntil(subject.examDate, now) >= 0
+          ? getDaysUntil(subject.examDate, now)
+          : undefined,
+      recentMinutes: getRecentMinutesBySubject(subject.id, sessions, now),
+      totalMinutes: getSubjectMinutes(subject.id, sessions),
+      lastStudiedAt: getLastStudiedBySubject(subject.id, sessions),
+    });
+
+    return acc;
+  }, []);
+
+const getExamPrioritySuggestion = (targets: TopicTarget[]) =>
+  [...targets]
+    .filter(
+      (target) =>
+        target.examDaysAway !== undefined && target.examDaysAway >= 0 && target.examDaysAway <= EXAM_PRIORITY_DAYS,
+    )
+    .sort(
+      (a, b) =>
+        (a.examDaysAway ?? Number.POSITIVE_INFINITY) - (b.examDaysAway ?? Number.POSITIVE_INFINITY) ||
+        a.recentMinutes - b.recentMinutes ||
+        a.totalMinutes - b.totalMinutes,
+    )[0];
+
+const getNeglectedSubjectSuggestion = (targets: TopicTarget[], now: Date) =>
+  [...targets]
+    .filter((target) => {
+      if (!target.lastStudiedAt) {
+        return true;
+      }
+
+      return getDaysUntil(target.lastStudiedAt, now) <= -NEGLECTED_SUBJECT_DAYS;
+    })
+    .sort(
+      (a, b) =>
+        a.recentMinutes - b.recentMinutes ||
+        (a.lastStudiedAt ? new Date(a.lastStudiedAt).getTime() : 0) -
+          (b.lastStudiedAt ? new Date(b.lastStudiedAt).getTime() : 0),
+    )[0];
+
+const getMomentumTopicSuggestion = (targets: TopicTarget[]) =>
+  [...targets].sort((a, b) => b.totalMinutes - a.totalMinutes || a.recentMinutes - b.recentMinutes)[0];
+
+const formatDayLabel = (days: number) => {
+  if (days === 0) {
+    return "today";
+  }
+
+  if (days === 1) {
+    return "in 1 day";
+  }
+
+  return `in ${days} days`;
+};
+
+const getSubjectMessage = (sessions: StudySession[], recentSessions: StudySession[], subjects: Subject[]) => {
+  const now = new Date();
+  const targets = buildTopicTargets(subjects, sessions, now);
+
+  if (targets.length === 0) {
+    const insights = getSubjectInsights(sessions, recentSessions);
+    const recentLeader = [...insights].sort(
+      (a, b) =>
+        b.recentMinutes - a.recentMinutes || b.avgFocus - a.avgFocus || b.totalMinutes - a.totalMinutes,
+    )[0];
+
+    return recentLeader
+      ? `Stay with ${recentLeader.name}. Momentum is there.`
+      : "Map a few syllabus topics to unlock subject suggestions.";
+  }
+
+  const examPriority = getExamPrioritySuggestion(targets);
+
+  if (examPriority?.examDaysAway !== undefined) {
+    return `Prioritize ${examPriority.subjectName}: ${examPriority.topicTitle} is still ${getStatusMessage(examPriority.topicStatus)} and the exam is ${formatDayLabel(examPriority.examDaysAway)}.`;
+  }
+
+  const neglectedTarget = getNeglectedSubjectSuggestion(targets, now);
+
+  if (neglectedTarget) {
+    return `Return to ${neglectedTarget.subjectName}: ${neglectedTarget.topicTitle} is still ${getStatusMessage(neglectedTarget.topicStatus)} and the subject has been quiet lately.`;
+  }
+
+  const momentumTarget = getMomentumTopicSuggestion(targets);
+
+  if (momentumTarget) {
+    return `Finish ${momentumTarget.unitTitle} / ${momentumTarget.topicTitle} in ${momentumTarget.subjectName} next.`;
+  }
+
+  return "Pick one unfinished topic and close it out.";
+};
+
+export const generateRecommendations = (
+  sessions: StudySession[],
+  subjects: Subject[],
+): RecommendationItem[] => {
   if (sessions.length === 0) {
+    const now = new Date();
+    const examTarget = getExamPrioritySuggestion(buildTopicTargets(subjects, sessions, now));
+
     return [
       { category: "focus", message: "Start one 25-min block to unlock insights." },
       { category: "break", message: "Take a 5-min reset between first sessions." },
-      { category: "subject", message: "Pick one subject and stay consistent today." },
+      {
+        category: "subject",
+        message: examTarget?.examDaysAway !== undefined
+          ? `Start with ${examTarget.subjectName}. The exam is ${formatDayLabel(examTarget.examDaysAway)}.`
+          : "Pick one unfinished topic and make the first pass today.",
+      },
     ];
   }
 
   const sortedSessions = byMostRecent(sessions);
-  const recentSessions = sortedSessions.slice(0, 4);
-  const previousSessions = sortedSessions.slice(4, 8);
+  const recentSessions = sortedSessions.slice(0, RECENT_SESSION_COUNT);
+  const previousSessions = sortedSessions.slice(
+    RECENT_SESSION_COUNT,
+    RECENT_SESSION_COUNT + PREVIOUS_SESSION_COUNT,
+  );
   const distractions = totalDistractions(recentSessions);
 
   const focusMessage = getFocusMessage(recentSessions, previousSessions, distractions);
   const breakMessage = getBreakMessage(recentSessions, distractions);
-  const subjectMessage = getSubjectMessage(sortedSessions, recentSessions);
+  const subjectMessage = getSubjectMessage(sortedSessions, recentSessions, subjects);
 
   return [
     { category: "focus", message: focusMessage },

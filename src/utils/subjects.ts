@@ -70,6 +70,7 @@ export const buildSubjectsFromNames = (subjectNames: string[], existingSubjects:
       name: existing?.name ?? name,
       color: ensureHexColor(existing?.color, existing?.name ?? name),
       syllabusUnits: existing?.syllabusUnits ?? [],
+      examDate: existing?.examDate,
     });
 
     return acc;

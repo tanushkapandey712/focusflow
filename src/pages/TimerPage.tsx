@@ -9,10 +9,17 @@ import { TIMER_PRESETS } from "../features/timer/types";
 import { useStudyTimer } from "../features/timer/useStudyTimer";
 import { useFocusFlowData } from "../hooks/useFocusFlowData";
 import { useFocusTracking } from "../hooks/useFocusTracking";
+import {
+  applySessionToSubjectTopic,
+  getSessionSyllabusLink,
+  getValidSyllabusSelection,
+} from "../utils/syllabusProgress";
 
 export const TimerPage = () => {
-  const { subjects, addSession } = useFocusFlowData();
+  const { subjects, addSession, updateSubject } = useFocusFlowData();
   const [selectedSubjectId, setSelectedSubjectId] = useState(subjects[0]?.id ?? "");
+  const [selectedUnitId, setSelectedUnitId] = useState("");
+  const [selectedTopicId, setSelectedTopicId] = useState("");
   const [goal, setGoal] = useState("");
   const [distractionTags, setDistractionTags] = useState<string[]>([]);
 
@@ -36,10 +43,44 @@ export const TimerPage = () => {
     () => subjects.find((subject) => subject.id === selectedSubjectId),
     [subjects, selectedSubjectId],
   );
+  const availableUnits = useMemo(
+    () => selectedSubject?.syllabusUnits ?? [],
+    [selectedSubject],
+  );
+  const selectedUnit = useMemo(
+    () => availableUnits.find((unit) => unit.id === selectedUnitId),
+    [availableUnits, selectedUnitId],
+  );
+  const availableTopics = useMemo(
+    () => selectedUnit?.topics ?? [],
+    [selectedUnit],
+  );
+  const selectedTopic = useMemo(
+    () => availableTopics.find((topic) => topic.id === selectedTopicId),
+    [availableTopics, selectedTopicId],
+  );
+
+  useEffect(() => {
+    const nextSelection = getValidSyllabusSelection(
+      selectedSubject,
+      selectedUnitId,
+      selectedTopicId,
+    );
+
+    if (nextSelection.unitId !== selectedUnitId) {
+      setSelectedUnitId(nextSelection.unitId);
+    }
+
+    if (nextSelection.topicId !== selectedTopicId) {
+      setSelectedTopicId(nextSelection.topicId);
+    }
+  }, [selectedSubject, selectedTopicId, selectedUnitId]);
 
   const handleEndSession = () => {
     if (!selectedSubject) return;
     const result = timer.end();
+    const endedAtIso = result.endedAt.toISOString();
+    const syllabusTopic = getSessionSyllabusLink(selectedSubject, selectedUnitId, selectedTopicId);
     const focusTrackingSummary = cameraTracking.finishSessionTracking({
       startedAt: result.startedAt,
       endedAt: result.endedAt,
@@ -62,14 +103,28 @@ export const TimerPage = () => {
       subjectId: selectedSubject.id,
       subjectName: selectedSubject.name,
       startedAt: result.startedAt.toISOString(),
-      endedAt: result.endedAt.toISOString(),
+      endedAt: endedAtIso,
       plannedMinutes: result.plannedMinutes,
       actualMinutes: result.actualMinutes,
       distractionCount: distractionTags.length + (focusTrackingSummary?.distractionEvents ?? 0),
       distractionTags: allDistractionTags,
       goal: goal.trim() || undefined,
+      syllabusTopic,
       focusTracking: focusTrackingSummary ?? undefined,
     });
+
+    const nextSyllabusUnits = applySessionToSubjectTopic(selectedSubject, {
+      syllabusTopic,
+      actualMinutes: result.actualMinutes,
+      endedAt: endedAtIso,
+    });
+
+    if (nextSyllabusUnits !== selectedSubject.syllabusUnits) {
+      updateSubject(selectedSubject.id, {
+        syllabusUnits: nextSyllabusUnits,
+      });
+    }
+
     setGoal("");
     setDistractionTags([]);
   };
@@ -85,6 +140,14 @@ export const TimerPage = () => {
           selectedSubject={selectedSubject}
           selectedSubjectId={selectedSubjectId}
           onSelectSubject={setSelectedSubjectId}
+          availableUnits={availableUnits}
+          selectedUnit={selectedUnit}
+          selectedUnitId={selectedUnitId}
+          onSelectUnit={setSelectedUnitId}
+          availableTopics={availableTopics}
+          selectedTopic={selectedTopic}
+          selectedTopicId={selectedTopicId}
+          onSelectTopic={setSelectedTopicId}
           goal={goal}
           onGoalChange={setGoal}
           distractionTags={distractionTags}

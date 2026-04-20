@@ -10,6 +10,7 @@ import { ProfileSetupPage } from "../pages/ProfileSetupPage";
 import { SessionHistoryPage } from "../pages/SessionHistoryPage";
 import { SettingsPage } from "../pages/SettingsPage";
 import { SignInPage } from "../pages/SignInPage";
+import { SubjectSyllabusDetailPage } from "../pages/SubjectSyllabusDetailPage";
 import { SyllabusHubPage } from "../pages/SyllabusHubPage";
 import { TimerPage } from "../pages/TimerPage";
 
@@ -29,6 +30,7 @@ export const AppRouter = () => (
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/timer" element={<TimerPage />} />
         <Route path="/syllabus" element={<SyllabusHubPage />} />
+        <Route path="/syllabus/:subjectId" element={<SubjectSyllabusDetailPage />} />
         <Route path="/goals" element={<GoalsPage />} />
         <Route path="/analytics" element={<AnalyticsPage />} />
         <Route path="/history" element={<SessionHistoryPage />} />

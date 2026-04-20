@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { DashboardContainer } from "../components/dashboard/DashboardContainer";
 import { AnalyticsPreviewCard } from "../components/dashboard/AnalyticsPreviewCard";
 import { FocusSnapshotCard } from "../components/dashboard/FocusSnapshotCard";
@@ -9,9 +10,13 @@ import { useFocusFlowData } from "../hooks/useFocusFlowData";
 import { useFocusTracking } from "../hooks/useFocusTracking";
 import { formatMinutes } from "../utils/date";
 import { generateRecommendations } from "../utils/recommendations";
+import {
+  getSubjectStudyBreakdown,
+  getSyllabusCompletionSummary,
+} from "../utils/syllabusProgress";
 
 export const DashboardPage = () => {
-  const { summary, sessions, profile } = useFocusFlowData();
+  const { summary, sessions, subjects, profile } = useFocusFlowData();
   const focusTracking = useFocusTracking();
 
   const weeklyBars = Array.from({ length: 7 }, (_, idx) => {
@@ -31,7 +36,16 @@ export const DashboardPage = () => {
       )
     : 0;
 
-  const suggestions = generateRecommendations(sessions);
+  const suggestions = generateRecommendations(sessions, subjects);
+  const subjectBreakdown = useMemo(
+    () => getSubjectStudyBreakdown(sessions, subjects),
+    [sessions, subjects],
+  );
+  const syllabusCompletion = useMemo(
+    () => getSyllabusCompletionSummary(subjects),
+    [subjects],
+  );
+  const topSubject = subjectBreakdown[0];
 
   return (
     <DashboardContainer>
@@ -41,6 +55,14 @@ export const DashboardPage = () => {
         todayMinutes={formatMinutes(summary.todayMinutes)}
         totalSessions={String(summary.totalSessions)}
         focusScore={`${focusScore}%`}
+        topSubjectTime={topSubject ? formatMinutes(topSubject.minutes) : "--"}
+        topSubjectDetail={topSubject ? topSubject.subjectName : "No tracked study time yet"}
+        syllabusCompletion={`${syllabusCompletion.completionPercent}%`}
+        syllabusDetail={
+          syllabusCompletion.totalTopics > 0
+            ? `${syllabusCompletion.coveredTopics} of ${syllabusCompletion.totalTopics} topics covered`
+            : "Add topics in Syllabus Map"
+        }
       />
 
       <FocusSnapshotCard

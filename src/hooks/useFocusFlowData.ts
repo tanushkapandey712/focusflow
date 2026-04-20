@@ -8,8 +8,19 @@ import {
   type PropsWithChildren,
 } from "react";
 import { localDataSource } from "../services/data/focusFlowDataSource";
-import type { DashboardSummary, StudyGoal, StudySession, Subject, UserProfile } from "../types/models";
+import type {
+  DashboardSummary,
+  StudyGoal,
+  StudySession,
+  Subject,
+  SyllabusUnit,
+  UserProfile,
+} from "../types/models";
 import { getLast7DaysTotal, isToday } from "../utils/date";
+import {
+  getSubjectSyllabus as getSubjectSyllabusFromSubjects,
+  type SaveReviewedSyllabusParams,
+} from "../utils/syllabusPersistence";
 
 interface FocusFlowDataValue {
   sessions: StudySession[];
@@ -20,6 +31,8 @@ interface FocusFlowDataValue {
   updateSession: (sessionId: string, patch: Partial<StudySession>) => void;
   addSubject: (subject: Subject) => void;
   updateSubject: (subjectId: string, patch: Partial<Subject>) => void;
+  saveReviewedSyllabus: (params: SaveReviewedSyllabusParams) => void;
+  getSubjectSyllabus: (subjectId: string) => SyllabusUnit[];
   setSubjects: (nextSubjects: Subject[]) => void;
   setProfile: (nextProfile: UserProfile) => void;
   setGoals: (nextGoals: StudyGoal[]) => void;
@@ -56,6 +69,14 @@ export const FocusFlowDataProvider = ({ children }: PropsWithChildren) => {
     const next = localDataSource.updateSubject(subjectId, patch);
     setSubjectsState(next);
   };
+
+  const saveReviewedSyllabus = (params: SaveReviewedSyllabusParams) => {
+    const next = localDataSource.saveReviewedSyllabus(params);
+    setSubjectsState(next);
+  };
+
+  const getSubjectSyllabus = (subjectId: string) =>
+    getSubjectSyllabusFromSubjects(subjects, subjectId);
 
   const setSubjects = (nextSubjects: Subject[]) => {
     setSubjectsState(nextSubjects);
@@ -111,6 +132,8 @@ export const FocusFlowDataProvider = ({ children }: PropsWithChildren) => {
     updateSession,
     addSubject,
     updateSubject,
+    saveReviewedSyllabus,
+    getSubjectSyllabus,
     setSubjects,
     setProfile,
     setGoals,

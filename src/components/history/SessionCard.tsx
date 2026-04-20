@@ -1,12 +1,19 @@
-import type { StudySession } from "../../types/models";
+import { useState } from "react";
+import type { StudySession, Subject } from "../../types/models";
 import type { ResolvedSubject } from "../../utils/subjects";
 import { getSubjectVisuals } from "../../utils/subjects";
+import { SessionTopicLinkEditor } from "./SessionTopicLinkEditor";
 import { SubjectBadge } from "../subjects/SubjectBadge";
-import { Card } from "../ui";
+import { Button, Card } from "../ui";
 
 interface SessionCardProps {
   session: StudySession;
   subject?: ResolvedSubject;
+  subjects: Subject[];
+  onSaveTopicLink?: (
+    sessionId: string,
+    params: { subjectId: string; unitId: string; topicId: string },
+  ) => void;
 }
 
 const getFocusScore = (session: StudySession) =>
@@ -30,7 +37,13 @@ const getStatus = (focusScore: number) => {
   return { label: "Distracted", className: "bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-200" };
 };
 
-export const SessionCard = ({ session, subject }: SessionCardProps) => {
+export const SessionCard = ({
+  session,
+  subject,
+  subjects,
+  onSaveTopicLink,
+}: SessionCardProps) => {
+  const [isEditingTopicLink, setIsEditingTopicLink] = useState(false);
   const focusScore = getFocusScore(session);
   const status = getStatus(focusScore);
   const shortNote = session.note ? session.note.slice(0, 80) : "";
@@ -76,6 +89,41 @@ export const SessionCard = ({ session, subject }: SessionCardProps) => {
           {shortNote}
           {session.note && session.note.length > 80 ? "..." : ""}
         </p>
+      ) : null}
+
+      {session.syllabusTopic ? (
+        <div className="mt-4 flex flex-wrap gap-2">
+          <span className="surface-pill px-3 py-1 text-xs font-medium text-slate-700 dark:text-slate-200">
+            Unit {session.syllabusTopic.unitTitle}
+          </span>
+          <span className="surface-pill px-3 py-1 text-xs font-medium text-slate-700 dark:text-slate-200">
+            Topic {session.syllabusTopic.topicTitle}
+          </span>
+        </div>
+      ) : null}
+
+      {onSaveTopicLink ? (
+        <div className="mt-4">
+          {!isEditingTopicLink ? (
+            <Button
+              variant="secondary"
+              onClick={() => setIsEditingTopicLink(true)}
+              className="rounded-full px-4"
+            >
+              {session.syllabusTopic ? "Edit topic link" : "Link topic"}
+            </Button>
+          ) : (
+            <SessionTopicLinkEditor
+              session={session}
+              subjects={subjects}
+              onCancel={() => setIsEditingTopicLink(false)}
+              onSave={(params) => {
+                onSaveTopicLink(session.id, params);
+                setIsEditingTopicLink(false);
+              }}
+            />
+          )}
+        </div>
       ) : null}
 
       {session.focusTracking ? (

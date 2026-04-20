@@ -7,6 +7,12 @@ import type {
   SyllabusUnit,
   UserProfile,
 } from "../../types/models";
+import {
+  getSubjectSyllabus as getSubjectSyllabusFromSubjects,
+  type SaveReviewedSyllabusParams,
+  saveReviewedSyllabusToSubjects,
+} from "../../utils/syllabusPersistence";
+import { getSyllabusTopicStatus } from "../../utils/syllabus";
 
 const STORAGE_KEYS = {
   subjects: "focusflow.subjects.v1",
@@ -56,7 +62,7 @@ const normalizeTopic = (value: unknown, index: number): SyllabusTopic | null => 
     return null;
   }
 
-  const candidate = value as Partial<SyllabusTopic>;
+  const candidate = value as Partial<SyllabusTopic> & { completed?: unknown };
   const title = typeof candidate.title === "string" ? candidate.title.trim() : "";
 
   if (!title) {
@@ -69,7 +75,47 @@ const normalizeTopic = (value: unknown, index: number): SyllabusTopic | null => 
         ? candidate.id
         : createFallbackNodeId("topic", index),
     title,
-    completed: candidate.completed === true,
+    studiedMinutes:
+      typeof candidate.studiedMinutes === "number" && Number.isFinite(candidate.studiedMinutes)
+        ? Math.max(0, candidate.studiedMinutes)
+        : 0,
+    studySessionsCount:
+      typeof candidate.studySessionsCount === "number" &&
+      Number.isFinite(candidate.studySessionsCount)
+        ? Math.max(0, candidate.studySessionsCount)
+        : 0,
+    lastStudiedAt:
+      typeof candidate.lastStudiedAt === "string" && candidate.lastStudiedAt.trim()
+        ? candidate.lastStudiedAt
+        : undefined,
+    status: getSyllabusTopicStatus({
+      id:
+        typeof candidate.id === "string" && candidate.id.trim()
+          ? candidate.id
+          : createFallbackNodeId("topic", index),
+      title,
+      status:
+        candidate.status === "not_started" ||
+        candidate.status === "in_progress" ||
+        candidate.status === "completed"
+          ? candidate.status
+          : candidate.completed === true
+            ? "completed"
+            : "not_started",
+      studiedMinutes:
+        typeof candidate.studiedMinutes === "number" && Number.isFinite(candidate.studiedMinutes)
+          ? Math.max(0, candidate.studiedMinutes)
+          : 0,
+      studySessionsCount:
+        typeof candidate.studySessionsCount === "number" &&
+        Number.isFinite(candidate.studySessionsCount)
+          ? Math.max(0, candidate.studySessionsCount)
+          : 0,
+      lastStudiedAt:
+        typeof candidate.lastStudiedAt === "string" && candidate.lastStudiedAt.trim()
+          ? candidate.lastStudiedAt
+          : undefined,
+    }),
   };
 };
 
@@ -119,6 +165,10 @@ const normalizeSubject = (value: unknown): Subject | null => {
     id,
     name,
     color,
+    examDate:
+      typeof candidate.examDate === "string" && candidate.examDate.trim()
+        ? candidate.examDate
+        : undefined,
     syllabusUnits: rawUnits
       .map((unit, unitIndex) => normalizeUnit(unit, unitIndex))
       .filter((unit): unit is SyllabusUnit => Boolean(unit)),
@@ -130,9 +180,11 @@ export interface FocusFlowStorageAPI {
   saveSession: (session: StudySession) => StudySession[];
   updateSession: (sessionId: string, patch: Partial<StudySession>) => StudySession[];
   getSubjects: () => Subject[];
+  getSubjectSyllabus: (subjectId: string) => SyllabusUnit[];
   saveSubjects: (subjects: Subject[]) => void;
   addSubject: (subject: Subject) => Subject[];
   updateSubject: (subjectId: string, patch: Partial<Subject>) => Subject[];
+  saveReviewedSyllabus: (params: SaveReviewedSyllabusParams) => Subject[];
   getProfile: () => UserProfile;
   saveProfile: (profile: UserProfile) => void;
   getGoals: () => StudyGoal[];
@@ -163,6 +215,9 @@ export const focusFlowStorage: FocusFlowStorageAPI = {
       .map((subject) => normalizeSubject(subject))
       .filter((subject): subject is Subject => Boolean(subject)),
 
+  getSubjectSyllabus: (subjectId) =>
+    getSubjectSyllabusFromSubjects(focusFlowStorage.getSubjects(), subjectId),
+
   saveSubjects: (subjects) =>
     safeWrite(
       STORAGE_KEYS.subjects,
@@ -192,6 +247,13 @@ export const focusFlowStorage: FocusFlowStorageAPI = {
     );
     safeWrite(STORAGE_KEYS.subjects, next);
     return next;
+  },
+
+  saveReviewedSyllabus: (params) => {
+    const current = focusFlowStorage.getSubjects();
+    const { subjects } = saveReviewedSyllabusToSubjects(current, params);
+    focusFlowStorage.saveSubjects(subjects);
+    return subjects;
   },
 
   getProfile: () => {

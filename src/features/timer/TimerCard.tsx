@@ -2,7 +2,7 @@ import { Pause, Play, Square, StopCircle } from "lucide-react";
 import { SubjectBadge } from "../../components/subjects/SubjectBadge";
 import { Button } from "../../components/ui";
 import { cn } from "../../lib/cn";
-import type { Subject } from "../../types/models";
+import type { Subject, SyllabusTopic, SyllabusUnit } from "../../types/models";
 import { getResolvedSubject, getSubjectVisuals } from "../../utils/subjects";
 import { DistractionSelector } from "./DistractionSelector";
 import type { TimerPreset, TimerStatus } from "./types";
@@ -12,6 +12,14 @@ interface TimerCardProps {
   selectedSubject?: Subject;
   selectedSubjectId: string;
   onSelectSubject: (subjectId: string) => void;
+  availableUnits: SyllabusUnit[];
+  selectedUnit?: SyllabusUnit;
+  selectedUnitId: string;
+  onSelectUnit: (unitId: string) => void;
+  availableTopics: SyllabusTopic[];
+  selectedTopic?: SyllabusTopic;
+  selectedTopicId: string;
+  onSelectTopic: (topicId: string) => void;
   goal: string;
   onGoalChange: (value: string) => void;
   distractionTags: string[];
@@ -42,6 +50,14 @@ export const TimerCard = ({
   selectedSubject,
   selectedSubjectId,
   onSelectSubject,
+  availableUnits,
+  selectedUnit,
+  selectedUnitId,
+  onSelectUnit,
+  availableTopics,
+  selectedTopic,
+  selectedTopicId,
+  onSelectTopic,
   goal,
   onGoalChange,
   distractionTags,
@@ -62,6 +78,7 @@ export const TimerCard = ({
   onReset,
 }: TimerCardProps) => {
   const activePresetLabel = presets.find((preset) => preset.mode === mode)?.label ?? "Focus Session";
+  const hasStructuredSyllabus = availableUnits.length > 0;
   const resolvedSubject = selectedSubject
     ? getResolvedSubject([selectedSubject], { subjectId: selectedSubject.id, subjectName: selectedSubject.name })
     : undefined;
@@ -170,6 +187,60 @@ export const TimerCard = ({
             </label>
           </div>
 
+          <div className="grid gap-3 text-left sm:grid-cols-2">
+            <label className="space-y-1">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                Unit
+              </span>
+              <select
+                value={selectedUnitId}
+                onChange={(e) => onSelectUnit(e.target.value)}
+                disabled={status === "running" || status === "paused" || !hasStructuredSyllabus}
+                className="field-surface"
+              >
+                {!hasStructuredSyllabus ? (
+                  <option value="">No units yet</option>
+                ) : null}
+                {availableUnits.map((unit) => (
+                  <option key={unit.id} value={unit.id}>
+                    {unit.title}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="space-y-1">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                Topic
+              </span>
+              <select
+                value={selectedTopicId}
+                onChange={(e) => onSelectTopic(e.target.value)}
+                disabled={status === "running" || status === "paused" || availableTopics.length === 0}
+                className="field-surface"
+              >
+                {availableTopics.length === 0 ? (
+                  <option value="">
+                    {hasStructuredSyllabus ? "No topics in this unit" : "Add topics in Syllabus Map"}
+                  </option>
+                ) : null}
+                {availableTopics.map((topic) => (
+                  <option key={topic.id} value={topic.id}>
+                    {topic.title}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          <p className="mx-auto max-w-2xl text-sm leading-6 text-slate-500 dark:text-slate-400">
+            {selectedUnit && selectedTopic
+              ? `This session will count toward ${selectedUnit.title} / ${selectedTopic.title}.`
+              : hasStructuredSyllabus
+                ? "Choose a unit and topic to link this session to your syllabus progress."
+                : "Add units and topics in Syllabus Map whenever you want session-level topic tracking."}
+          </p>
+
           {resolvedSubject ? (
             <div
               className="grid gap-3 rounded-[1.75rem] border px-4 py-4 text-left sm:grid-cols-3"
@@ -199,6 +270,21 @@ export const TimerCard = ({
                   {goal.trim() || `${Math.round(progress)}% complete`}
                 </p>
               </div>
+            </div>
+          ) : null}
+
+          {selectedUnit || selectedTopic ? (
+            <div className="flex flex-wrap justify-center gap-2">
+              {selectedUnit ? (
+                <span className="surface-pill px-3 py-1 text-xs font-medium text-slate-700 dark:text-slate-200">
+                  Unit: {selectedUnit.title}
+                </span>
+              ) : null}
+              {selectedTopic ? (
+                <span className="surface-pill px-3 py-1 text-xs font-medium text-slate-700 dark:text-slate-200">
+                  Topic: {selectedTopic.title}
+                </span>
+              ) : null}
             </div>
           ) : null}
 

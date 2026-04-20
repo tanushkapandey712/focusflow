@@ -4,10 +4,11 @@ import { SessionCard } from "../components/history/SessionCard";
 import { Card } from "../components/ui/Card";
 import { SectionContainer } from "../components/ui";
 import { useFocusFlowData } from "../hooks/useFocusFlowData";
+import { getSessionSyllabusLink, rebuildSubjectsWithSessionProgress } from "../utils/syllabusProgress";
 import { getResolvedSubject } from "../utils/subjects";
 
 export const SessionHistoryPage = () => {
-  const { sessions, subjects } = useFocusFlowData();
+  const { sessions, subjects, updateSession, setSubjects } = useFocusFlowData();
   const [subjectFilter, setSubjectFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"recent" | "oldest" | "duration" | "focus">("recent");
@@ -40,6 +41,37 @@ export const SessionHistoryPage = () => {
       return new Date(b.endedAt).getTime() - new Date(a.endedAt).getTime();
     });
   }, [sessions, subjectFilter, searchQuery, sortBy]);
+
+  const handleSaveTopicLink = (
+    sessionId: string,
+    params: { subjectId: string; unitId: string; topicId: string },
+  ) => {
+    const nextSubject = subjects.find((subject) => subject.id === params.subjectId);
+    const currentSession = sessions.find((session) => session.id === sessionId);
+
+    if (!nextSubject || !currentSession) {
+      return;
+    }
+
+    const syllabusTopic = getSessionSyllabusLink(nextSubject, params.unitId, params.topicId);
+
+    if (!syllabusTopic) {
+      return;
+    }
+
+    const patch = {
+      subjectId: nextSubject.id,
+      subjectName: nextSubject.name,
+      syllabusTopic,
+    };
+
+    updateSession(sessionId, patch);
+
+    const nextSessions = sessions.map((session) =>
+      session.id === sessionId ? { ...session, ...patch } : session,
+    );
+    setSubjects(rebuildSubjectsWithSessionProgress(subjects, nextSessions));
+  };
 
   return (
     <DashboardContainer className="max-w-3xl">
@@ -91,10 +123,12 @@ export const SessionHistoryPage = () => {
             <div key={session.id}>
               <SessionCard
                 session={session}
+                subjects={subjects}
                 subject={getResolvedSubject(subjects, {
                   subjectId: session.subjectId,
                   subjectName: session.subjectName,
                 })}
+                onSaveTopicLink={handleSaveTopicLink}
               />
             </div>
           ))}

@@ -23,7 +23,9 @@ const routeMeta: Record<string, { title: string; subtitle: string }> = {
 
 const TopbarContent = ({ darkMode, toggleDarkMode }: TopbarProps) => {
   const { pathname } = useLocation();
-  const meta = routeMeta[pathname] ?? routeMeta["/dashboard"];
+  const meta = pathname.startsWith("/syllabus/")
+    ? { title: "Subject Detail", subtitle: "One subject in focus" }
+    : routeMeta[pathname] ?? routeMeta["/dashboard"];
   const dateLabel = new Intl.DateTimeFormat(undefined, {
     month: "short",
     day: "numeric",

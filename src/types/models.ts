@@ -1,9 +1,14 @@
 import type { FocusTrackingSessionSummary } from "./focusTracking";
 
+export type SyllabusTopicStatus = "not_started" | "in_progress" | "completed";
+
 export interface SyllabusTopic {
   id: string;
   title: string;
-  completed: boolean;
+  status: SyllabusTopicStatus;
+  studiedMinutes: number;
+  studySessionsCount: number;
+  lastStudiedAt?: string;
 }
 
 export interface SyllabusUnit {
@@ -17,6 +22,7 @@ export interface Subject {
   name: string;
   color: string;
   syllabusUnits: SyllabusUnit[];
+  examDate?: string;
 }
 
 export type InstitutionType = "school" | "college";
@@ -44,6 +50,13 @@ export interface StudyGoal {
   dueDate?: string;
 }
 
+export interface StudySessionSyllabusLink {
+  unitId: string;
+  unitTitle: string;
+  topicId: string;
+  topicTitle: string;
+}
+
 export interface StudySession {
   id: string;
   subjectId: string;
@@ -56,6 +69,7 @@ export interface StudySession {
   distractionTags?: string[];
   goal?: string;
   note?: string;
+  syllabusTopic?: StudySessionSyllabusLink;
   focusTracking?: FocusTrackingSessionSummary;
 }
 

@@ -5,10 +5,11 @@ interface StatCardProps {
   label: string;
   value: string;
   trend?: string;
+  detail?: string;
   compact?: boolean;
 }
 
-export const StatCard = ({ label, value, trend, compact = false }: StatCardProps) => (
+export const StatCard = ({ label, value, trend, detail, compact = false }: StatCardProps) => (
   <Card
     className={
       compact
@@ -36,6 +37,8 @@ export const StatCard = ({ label, value, trend, compact = false }: StatCardProps
         <ArrowUpRight size={14} />
         {trend}
       </p>
+    ) : detail ? (
+      <p className="text-xs font-medium text-slate-500 dark:text-slate-400">{detail}</p>
     ) : null}
   </Card>
 );
