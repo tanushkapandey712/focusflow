@@ -118,6 +118,9 @@ export const getUnitCompletionPercent = (unit: SyllabusUnit) => {
 export const getUnitCoveredTopicCount = (unit: SyllabusUnit) =>
   unit.topics.filter((topic) => isSyllabusTopicCovered(topic)).length;
 
+export const getUnitCompletedTopicCount = (unit: SyllabusUnit) =>
+  unit.topics.filter((topic) => getSyllabusTopicStatus(topic) === "completed").length;
+
 export const getNextTopicToStudy = (topics: SyllabusTopic[]) =>
   topics.find((topic) => getSyllabusTopicStatus(topic) === "in_progress") ??
   topics.find((topic) => getSyllabusTopicStatus(topic) === "not_started") ??
