@@ -1,0 +1,29 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="focusflow-bg" x1="10" y1="8" x2="56" y2="58" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#4A44D6" />
+      <stop offset="0.58" stop-color="#6F6CFF" />
+      <stop offset="1" stop-color="#38BDF8" />
+    </linearGradient>
+    <linearGradient id="focusflow-glow" x1="18" y1="14" x2="44" y2="50" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF" stop-opacity="0.38" />
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0.08" />
+    </linearGradient>
+  </defs>
+  <rect x="4" y="4" width="56" height="56" rx="18" fill="url(#focusflow-bg)" />
+  <path
+    d="M32 16C23.1634 16 16 23.1634 16 32C16 40.8366 23.1634 48 32 48C39.1367 48 45.1827 43.3256 47.2473 36.8655"
+    stroke="white"
+    stroke-width="5"
+    stroke-linecap="round"
+    stroke-opacity="0.9"
+  />
+  <path
+    d="M24 32.25L29.4 37.65L40.5 26.5"
+    stroke="white"
+    stroke-width="5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <circle cx="46.5" cy="19.5" r="4.5" fill="url(#focusflow-glow)" />
+</svg>

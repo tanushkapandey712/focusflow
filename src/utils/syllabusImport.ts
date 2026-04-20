@@ -2,8 +2,8 @@ import type { SyllabusUnit } from "../types/models";
 import { createSyllabusTopic, createSyllabusUnit } from "./syllabus";
 
 const UNIT_LABEL_PATTERN = "unit|module|chapter|part|section|lesson|week|theme|block|paper";
-const EXPLICIT_UNIT_PREFIX_PATTERN = new RegExp(
-  `^(${UNIT_LABEL_PATTERN})\\b(?:\\s*[-:]?\\s*(?:\\(?[ivxlcdm]+\\)?|\\(?\\d+\\)?|[a-z]))?`,
+const STRONG_UNIT_HEADING_PATTERN = new RegExp(
+  `^(${UNIT_LABEL_PATTERN})\\s*(?:[-:]?\\s*)?(\\(?\\d+\\)?|\\(?[ivxlcdm]+\\)?)(?:\\s*(?:[:.-])\\s*|\\s+)?(.*)$`,
   "i",
 );
 const LEADING_BULLET_PATTERN =
@@ -16,17 +16,21 @@ const INLINE_ENUMERATION_SPLIT_PATTERN =
   /\s+(?=(?:\(?\d+\)?|[ivxlcdm]+|[a-z])[.)\]-]\s+)/i;
 const SEMICOLON_SPLIT_PATTERN = /\s*;\s*/;
 const COMMA_SPLIT_PATTERN = /\s*,\s*/;
+const COMMA_TOPIC_LIST_BLOCKER_PATTERN =
+  /\b(?:include|includes|including|consists? of|such as|for example|e\.g\.|i\.e\.|namely)\b/i;
 const TRAILING_CONNECTIVE_PATTERN =
   /\b(?:and|or|of|the|to|in|for|with|on|by|from|into|using|based|including|through)\s*$/i;
 const CONTINUATION_START_PATTERN =
   /^(?:[a-z(]|and\b|or\b|of\b|the\b|to\b|in\b|for\b|with\b|on\b|by\b|from\b|using\b|based\b|including\b|through\b)/;
+const SAFE_WRAPPED_TOPIC_START_PATTERN =
+  /^(?:[a-z0-9(]|and\b|or\b|of\b|the\b|to\b|in\b|for\b|with\b|on\b|by\b|from\b|using\b|based\b|including\b|through\b)/;
 
 interface ParsedLine {
   sanitized: string;
   isBlank: boolean;
 }
 
-interface ExplicitUnitHeader {
+interface UnitHeadingMatch {
   unitTitle: string;
   inlineTopicText?: string;
 }
@@ -42,13 +46,21 @@ const sanitizeLine = (value: string) =>
     .replace(/\s+/g, " ")
     .trim();
 
+const normalizeExtractedText = (value: string) =>
+  normalizeCharacters(value)
+    .replace(/\r\n?/g, "\n")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/[ \t]{2,}/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+
 const normalizeUnitTitle = (line: string) =>
   sanitizeLine(line)
     .replace(/\s*:\s*$/, "")
     .replace(/\s+-\s+$/, "")
     .trim();
 
-const stripLeadingTopicMarker = (line: string) =>
+const normalizeTopicText = (line: string) =>
   sanitizeLine(line)
     .replace(LEADING_BULLET_PATTERN, "")
     .replace(LEADING_ENUMERATION_PATTERN, "")
@@ -56,64 +68,55 @@ const stripLeadingTopicMarker = (line: string) =>
 
 const getWordCount = (line: string) => line.split(" ").filter(Boolean).length;
 
-const isMostlyUppercase = (line: string) =>
-  line === line.toUpperCase() && /[A-Z]/.test(line);
-
-const isHeadingStyled = (line: string) => {
-  const words = line.split(" ").filter(Boolean);
-
-  if (words.length === 0) {
-    return false;
-  }
-
-  const connectiveWords = new Set([
-    "and",
-    "or",
-    "of",
-    "the",
-    "to",
-    "in",
-    "for",
-    "with",
-    "on",
-    "by",
-  ]);
-
-  return words.every((word, index) => {
-    if (connectiveWords.has(word.toLowerCase())) {
-      return index !== 0;
-    }
-
-    return /^[A-Z0-9(]/.test(word);
-  });
-};
-
 const splitAndSanitize = (value: string, pattern: RegExp) =>
   value
     .split(pattern)
     .map((segment) => sanitizeLine(segment))
     .filter(Boolean);
 
-const isSimpleColonHeading = (line: string) => {
-  const normalized = sanitizeLine(line);
+const isSentenceLikeTopicText = (text: string) =>
+  /[.!?]$/.test(text) || COMMA_TOPIC_LIST_BLOCKER_PATTERN.test(text);
 
-  return normalized.endsWith(":") && getWordCount(normalized.replace(/:$/, "")) <= 8;
+const isReasonableTopicSegment = (segment: string, maxWords: number) => {
+  const normalized = normalizeTopicText(segment);
+
+  return (
+    normalized.length > 0 &&
+    getWordCount(normalized) <= maxWords &&
+    !/[.!?]$/.test(normalized)
+  );
 };
 
-const shouldSplitCommaSegments = (segments: string[], force = false) =>
-  segments.length > 1 &&
-  (force ||
-    segments.every(
-      (segment) =>
-        getWordCount(segment) <= 8 &&
-        !/[.!?]$/.test(segment) &&
-        !/\b(?:include|includes|including|consists? of|such as)\b/i.test(segment),
-    ));
+const shouldSplitCommaTopics = (
+  text: string,
+  segments: string[],
+  force = false,
+) => {
+  if (segments.length <= 1) {
+    return false;
+  }
+
+  if (force) {
+    return true;
+  }
+
+  const normalized = sanitizeLine(text);
+
+  if (isSentenceLikeTopicText(normalized)) {
+    return false;
+  }
+
+  const maxWordsPerSegment = segments.length >= 3 ? 18 : 8;
+
+  return segments.every((segment) => isReasonableTopicSegment(segment, maxWordsPerSegment));
+};
 
 const getCommaSeparatedSegments = (line: string, force = false) => {
   const commaSegments = splitAndSanitize(line, COMMA_SPLIT_PATTERN);
 
-  return shouldSplitCommaSegments(commaSegments, force) ? commaSegments : [];
+  return shouldSplitCommaTopics(line, commaSegments, force)
+    ? commaSegments.map(normalizeTopicText).filter(Boolean)
+    : [];
 };
 
 const shouldSplitHeadingRemainderAsTopics = (value: string) => {
@@ -132,18 +135,18 @@ const shouldSplitHeadingRemainderAsTopics = (value: string) => {
   );
 };
 
-const parseExplicitUnitHeader = (line: string): ExplicitUnitHeader | null => {
+const extractUnitHeading = (line: string): UnitHeadingMatch | null => {
   const normalized = sanitizeLine(line);
-  const match = normalized.match(EXPLICIT_UNIT_PREFIX_PATTERN);
+  const match = normalized.match(STRONG_UNIT_HEADING_PATTERN);
 
   if (!match) {
     return null;
   }
 
-  const headingPrefix = normalizeUnitTitle(match[0]);
-  const remainder = normalizeUnitTitle(
-    normalized.slice(match[0].length).replace(/^\s*[-:.]\s*/, ""),
-  );
+  const label = match[1];
+  const index = match[2];
+  const remainder = normalizeUnitTitle(match[3] ?? "");
+  const headingPrefix = normalizeUnitTitle(`${label} ${index}`);
 
   if (!remainder) {
     return {
@@ -163,8 +166,11 @@ const parseExplicitUnitHeader = (line: string): ExplicitUnitHeader | null => {
   };
 };
 
-const isExplicitUnitHeader = (line: string) =>
-  Boolean(parseExplicitUnitHeader(line)) || isSimpleColonHeading(line);
+const isUnitHeading = (line: string) => Boolean(extractUnitHeading(line));
+
+const extractUnitTitle = (line: string) => extractUnitHeading(line)?.unitTitle ?? null;
+
+const extractInlineTopicText = (line: string) => extractUnitHeading(line)?.inlineTopicText;
 
 const isTopicListLine = (line: string) => {
   const normalized = sanitizeLine(line);
@@ -172,20 +178,78 @@ const isTopicListLine = (line: string) => {
   return (
     LEADING_BULLET_PATTERN.test(normalized) ||
     LEADING_ENUMERATION_PATTERN.test(normalized) ||
-    INLINE_BULLET_SPLIT_PATTERN.test(stripLeadingTopicMarker(normalized))
+    INLINE_BULLET_SPLIT_PATTERN.test(normalizeTopicText(normalized))
   );
 };
 
-const shouldMergeBrokenLine = (previousLine: string, currentLine: string) => {
+const isLikelyWrappedTopicLine = (previousLine: string, currentLine: string) => {
+  const previous = sanitizeLine(previousLine);
+  const current = sanitizeLine(currentLine);
+
+  if (!previous || !current) {
+    return false;
+  }
+
+  if (
+    isUnitHeading(previous) ||
+    isUnitHeading(current) ||
+    isTopicListLine(previous) ||
+    isTopicListLine(current)
+  ) {
+    return false;
+  }
+
+  if (/[.!?:;]$/.test(previous)) {
+    return false;
+  }
+
+  return (
+    getWordCount(previous) >= 5 &&
+    getWordCount(current) <= 5 &&
+    SAFE_WRAPPED_TOPIC_START_PATTERN.test(current)
+  );
+};
+
+const isLikelyIndentedContinuation = (
+  rawLine: string,
+  previousLine: string,
+  currentLine: string,
+) => {
+  const previous = sanitizeLine(previousLine);
+  const current = sanitizeLine(currentLine);
+
+  if (!/^\s+/.test(rawLine) || !previous || !current) {
+    return false;
+  }
+
+  if (
+    isUnitHeading(previous) ||
+    isUnitHeading(current) ||
+    isTopicListLine(previous) ||
+    isTopicListLine(current)
+  ) {
+    return false;
+  }
+
+  if (/[.!?:;,]$/.test(previous)) {
+    return false;
+  }
+
+  return getWordCount(previous) <= 3 && getWordCount(current) <= 3;
+};
+
+const shouldMergeBrokenLine = (
+  previousLine: string,
+  currentLine: string,
+  options?: { rawLine?: string },
+) => {
   if (!previousLine || !currentLine) {
     return false;
   }
 
   if (
-    isExplicitUnitHeader(previousLine) ||
-    isExplicitUnitHeader(currentLine) ||
-    isSimpleColonHeading(previousLine) ||
-    isSimpleColonHeading(currentLine) ||
+    isUnitHeading(previousLine) ||
+    isUnitHeading(currentLine) ||
     isTopicListLine(previousLine) ||
     isTopicListLine(currentLine)
   ) {
@@ -203,7 +267,9 @@ const shouldMergeBrokenLine = (previousLine: string, currentLine: string) => {
   return (
     /-$/.test(previousLine) ||
     TRAILING_CONNECTIVE_PATTERN.test(previousLine) ||
-    CONTINUATION_START_PATTERN.test(currentLine)
+    CONTINUATION_START_PATTERN.test(currentLine) ||
+    isLikelyWrappedTopicLine(previousLine, currentLine) ||
+    isLikelyIndentedContinuation(options?.rawLine ?? "", previousLine, currentLine)
   );
 };
 
@@ -216,7 +282,8 @@ const mergeBrokenLine = (previousLine: string, currentLine: string) => {
 };
 
 const parseLines = (rawText: string): ParsedLine[] => {
-  const normalizedLines = rawText.split(/\r?\n/).reduce<string[]>((acc, rawLine) => {
+  const normalizedText = normalizeExtractedText(rawText);
+  const normalizedLines = normalizedText.split("\n").reduce<string[]>((acc, rawLine) => {
     const sanitized = sanitizeLine(rawLine);
 
     if (!sanitized) {
@@ -232,7 +299,7 @@ const parseLines = (rawText: string): ParsedLine[] => {
     if (
       previousLine &&
       previousLine !== "" &&
-      shouldMergeBrokenLine(previousLine, sanitized)
+      shouldMergeBrokenLine(previousLine, sanitized, { rawLine })
     ) {
       acc[lastIndex] = mergeBrokenLine(previousLine, sanitized);
       return acc;
@@ -248,82 +315,11 @@ const parseLines = (rawText: string): ParsedLine[] => {
   }));
 };
 
-const getNextMeaningfulIndex = (lines: ParsedLine[], startIndex: number) => {
-  for (let index = startIndex + 1; index < lines.length; index += 1) {
-    if (!lines[index].isBlank) {
-      return index;
-    }
-  }
-
-  return -1;
-};
-
-const collectFollowersUntilBoundary = (lines: ParsedLine[], startIndex: number) => {
-  const followers: string[] = [];
-
-  for (let index = startIndex + 1; index < lines.length; index += 1) {
-    if (lines[index].isBlank) {
-      break;
-    }
-
-    if (isExplicitUnitHeader(lines[index].sanitized)) {
-      break;
-    }
-
-    followers.push(lines[index].sanitized);
-  }
-
-  return followers;
-};
-
-// Treat short, heading-styled lines as unit headers only when they introduce a block of followers.
-const shouldTreatAsStandaloneHeader = (
-  line: string,
-  lines: ParsedLine[],
-  index: number,
-  currentUnit: SyllabusUnit | null,
-) => {
-  const normalized = normalizeUnitTitle(stripLeadingTopicMarker(line));
-
-  if (!normalized || isExplicitUnitHeader(line) || isTopicListLine(line)) {
-    return false;
-  }
-
-  if (/[.!?]$/.test(normalized) || getWordCount(normalized) > 7) {
-    return false;
-  }
-
-  if (currentUnit && currentUnit.topics.length === 0) {
-    return false;
-  }
-
-  const nextMeaningfulIndex = getNextMeaningfulIndex(lines, index);
-
-  if (nextMeaningfulIndex === -1) {
-    return false;
-  }
-
-  const followers = collectFollowersUntilBoundary(lines, index);
-
-  if (followers.length === 0) {
-    return false;
-  }
-
-  const previousLineIsBlank = index === 0 || lines[index - 1].isBlank;
-  const hasTopicLikeFollowers = followers.some(
-    (follower) => !isExplicitUnitHeader(follower),
-  );
-  const styleSignal =
-    previousLineIsBlank || isMostlyUppercase(normalized) || isHeadingStyled(normalized);
-
-  return styleSignal && hasTopicLikeFollowers;
-};
-
-const splitTopicSegments = (
-  line: string,
+const splitTopics = (
+  text: string,
   options?: { forceCommaSplit?: boolean },
 ) => {
-  const normalized = stripLeadingTopicMarker(line);
+  const normalized = normalizeTopicText(text);
 
   if (!normalized) {
     return [];
@@ -332,16 +328,18 @@ const splitTopicSegments = (
   const bulletSegments = splitAndSanitize(normalized, INLINE_BULLET_SPLIT_PATTERN);
 
   if (bulletSegments.length > 1) {
-    return bulletSegments;
+    return bulletSegments.map(normalizeTopicText).filter(Boolean);
   }
 
   const enumeratedSegments = splitAndSanitize(normalized, INLINE_ENUMERATION_SPLIT_PATTERN);
 
   if (enumeratedSegments.length > 1) {
-    return enumeratedSegments.map(stripLeadingTopicMarker).filter(Boolean);
+    return enumeratedSegments.map(normalizeTopicText).filter(Boolean);
   }
 
-  const semicolonSegments = splitAndSanitize(normalized, SEMICOLON_SPLIT_PATTERN);
+  const semicolonSegments = splitAndSanitize(normalized, SEMICOLON_SPLIT_PATTERN)
+    .map(normalizeTopicText)
+    .filter(Boolean);
 
   if (
     semicolonSegments.length > 1 &&
@@ -370,9 +368,9 @@ const shouldAppendToPreviousTopic = (line: string, currentUnit: SyllabusUnit | n
     return false;
   }
 
-  const normalized = stripLeadingTopicMarker(line);
+  const normalized = normalizeTopicText(line);
 
-  if (!normalized || isExplicitUnitHeader(normalized) || isTopicListLine(line)) {
+  if (!normalized || isUnitHeading(normalized) || isTopicListLine(line)) {
     return false;
   }
 
@@ -422,7 +420,7 @@ const buildFallbackUnits = (lines: ParsedLine[]) => {
     .forEach((line) => {
       pushTopicSegments(
         fallbackUnit,
-        splitTopicSegments(line.sanitized, { forceCommaSplit: true }),
+        splitTopics(line.sanitized, { forceCommaSplit: true }),
       );
     });
 
@@ -440,6 +438,55 @@ const buildFallbackUnits = (lines: ParsedLine[]) => {
   return finalizeUnits([fallbackUnit]);
 };
 
+const parseSyllabusLines = (lines: ParsedLine[]) => {
+  const units: SyllabusUnit[] = [];
+  let currentUnit: SyllabusUnit | null = null;
+
+  lines.forEach((line) => {
+    if (line.isBlank) {
+      return;
+    }
+
+    if (isUnitHeading(line.sanitized)) {
+      const unitTitle = extractUnitTitle(line.sanitized);
+
+      if (!unitTitle) {
+        return;
+      }
+
+      currentUnit = createSyllabusUnit(unitTitle);
+      units.push(currentUnit);
+
+      const inlineTopicText = extractInlineTopicText(line.sanitized);
+
+      if (inlineTopicText) {
+        pushTopicSegments(
+          currentUnit,
+          splitTopics(inlineTopicText, {
+            forceCommaSplit: true,
+          }),
+        );
+      }
+
+      return;
+    }
+
+    if (!currentUnit) {
+      currentUnit = createSyllabusUnit("Imported Topics");
+      units.push(currentUnit);
+    }
+
+    if (shouldAppendToPreviousTopic(line.sanitized, currentUnit)) {
+      appendToLastTopic(currentUnit, line.sanitized);
+      return;
+    }
+
+    pushTopicSegments(currentUnit, splitTopics(line.sanitized));
+  });
+
+  return finalizeUnits(units);
+};
+
 export const parseSyllabusText = (rawText: string): SyllabusUnit[] => {
   try {
     const lines = parseLines(rawText);
@@ -448,60 +495,7 @@ export const parseSyllabusText = (rawText: string): SyllabusUnit[] => {
       return [];
     }
 
-    const units: SyllabusUnit[] = [];
-    let currentUnit: SyllabusUnit | null = null;
-
-    lines.forEach((line, index) => {
-      if (line.isBlank) {
-        return;
-      }
-
-      const explicitUnitHeader = parseExplicitUnitHeader(line.sanitized);
-
-      if (explicitUnitHeader) {
-        currentUnit = createSyllabusUnit(explicitUnitHeader.unitTitle);
-        units.push(currentUnit);
-
-        if (explicitUnitHeader.inlineTopicText) {
-          pushTopicSegments(
-            currentUnit,
-            splitTopicSegments(explicitUnitHeader.inlineTopicText, {
-              forceCommaSplit: true,
-            }),
-          );
-        }
-
-        return;
-      }
-
-      if (isSimpleColonHeading(line.sanitized)) {
-        currentUnit = createSyllabusUnit(normalizeUnitTitle(line.sanitized));
-        units.push(currentUnit);
-        return;
-      }
-
-      if (shouldTreatAsStandaloneHeader(line.sanitized, lines, index, currentUnit)) {
-        currentUnit = createSyllabusUnit(
-          normalizeUnitTitle(stripLeadingTopicMarker(line.sanitized)),
-        );
-        units.push(currentUnit);
-        return;
-      }
-
-      if (!currentUnit) {
-        currentUnit = createSyllabusUnit("Imported Topics");
-        units.push(currentUnit);
-      }
-
-      if (shouldAppendToPreviousTopic(line.sanitized, currentUnit)) {
-        appendToLastTopic(currentUnit, line.sanitized);
-        return;
-      }
-
-      pushTopicSegments(currentUnit, splitTopicSegments(line.sanitized));
-    });
-
-    const finalizedUnits = finalizeUnits(units);
+    const finalizedUnits = parseSyllabusLines(lines);
 
     return finalizedUnits.length > 0 ? finalizedUnits : buildFallbackUnits(lines);
   } catch {
