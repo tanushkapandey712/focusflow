@@ -80,6 +80,74 @@ export const SyllabusHubPage = () => {
     handleSubjectUnitsUpdate(subject, nextUnits);
   };
 
+  const handleRenameUnit = (subjectId: string, unitId: string, title: string) => {
+    const subject = getSubjectById(subjectId);
+
+    if (!subject) {
+      return;
+    }
+
+    const nextUnits = subject.syllabusUnits.map((unit) =>
+      unit.id === unitId ? { ...unit, title } : unit,
+    );
+
+    handleSubjectUnitsUpdate(subject, nextUnits);
+  };
+
+  const handleDeleteUnit = (subjectId: string, unitId: string) => {
+    const subject = getSubjectById(subjectId);
+
+    if (!subject) {
+      return;
+    }
+
+    const nextUnits = subject.syllabusUnits.filter((unit) => unit.id !== unitId);
+    handleSubjectUnitsUpdate(subject, nextUnits);
+  };
+
+  const handleRenameTopic = (
+    subjectId: string,
+    unitId: string,
+    topicId: string,
+    title: string,
+  ) => {
+    const subject = getSubjectById(subjectId);
+
+    if (!subject) {
+      return;
+    }
+
+    const nextUnits = subject.syllabusUnits.map((unit) =>
+      unit.id === unitId
+        ? {
+            ...unit,
+            topics: unit.topics.map((topic) => (topic.id === topicId ? { ...topic, title } : topic)),
+          }
+        : unit,
+    );
+
+    handleSubjectUnitsUpdate(subject, nextUnits);
+  };
+
+  const handleDeleteTopic = (subjectId: string, unitId: string, topicId: string) => {
+    const subject = getSubjectById(subjectId);
+
+    if (!subject) {
+      return;
+    }
+
+    const nextUnits = subject.syllabusUnits.map((unit) =>
+      unit.id === unitId
+        ? {
+            ...unit,
+            topics: unit.topics.filter((topic) => topic.id !== topicId),
+          }
+        : unit,
+    );
+
+    handleSubjectUnitsUpdate(subject, nextUnits);
+  };
+
   const handleToggleTopic = (subjectId: string, unitId: string, topicId: string) => {
     const subject = getSubjectById(subjectId);
 
@@ -165,6 +233,10 @@ export const SyllabusHubPage = () => {
                 subject={{ ...subject, syllabusUnits: getSubjectSyllabus(subject.id) }}
                 onAddUnit={handleAddUnit}
                 onAddTopic={handleAddTopic}
+                onRenameUnit={handleRenameUnit}
+                onDeleteUnit={handleDeleteUnit}
+                onRenameTopic={handleRenameTopic}
+                onDeleteTopic={handleDeleteTopic}
                 onToggleTopic={handleToggleTopic}
                 onOpenSubject={(subjectId) => navigate(`/syllabus/${subjectId}`)}
               />
