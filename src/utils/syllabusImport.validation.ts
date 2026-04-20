@@ -142,6 +142,82 @@ Taylor Expansion`,
     expectedTopicArrays: [["Applications of Derivatives", "Mean Value Theorems", "Taylor Expansion"]],
   },
   {
+    name: "strict heading variants stay supported",
+    rawInput: `Unit-1: Algebra
+Linear equations
+
+Module 2
+Polynomials
+
+Chapter 3 - Geometry
+Triangles`,
+    expectedParsedUnits: [
+      {
+        title: "Unit 1: Algebra",
+        topics: ["Linear equations"],
+      },
+      {
+        title: "Module 2",
+        topics: ["Polynomials"],
+      },
+      {
+        title: "Chapter 3: Geometry",
+        topics: ["Triangles"],
+      },
+    ],
+    expectedTopicArrays: [["Linear equations"], ["Polynomials"], ["Triangles"]],
+  },
+  {
+    name: "capitalized topic lines do not become units",
+    rawInput: `Unit 1: Signals
+Fourier series
+Laplace transforms
+Random variables`,
+    expectedParsedUnits: [
+      {
+        title: "Unit 1: Signals",
+        topics: ["Fourier series", "Laplace transforms", "Random variables"],
+      },
+    ],
+    expectedTopicArrays: [["Fourier series", "Laplace transforms", "Random variables"]],
+  },
+  {
+    name: "mixed topic separators stay split safely",
+    rawInput: `Unit 1: Geometry
+Triangles; Circles, Coordinate Geometry
+- Transformations`,
+    expectedParsedUnits: [
+      {
+        title: "Unit 1: Geometry",
+        topics: ["Triangles", "Circles", "Coordinate Geometry", "Transformations"],
+      },
+    ],
+    expectedTopicArrays: [["Triangles", "Circles", "Coordinate Geometry", "Transformations"]],
+  },
+  {
+    name: "unit heading mixed with inline topic text",
+    rawInput: `Unit 1: Introduction to DBMS, Characteristics of DBMS, Advantages of DBMS, Database users`,
+    expectedParsedUnits: [
+      {
+        title: "Unit 1",
+        topics: [
+          "Introduction to DBMS",
+          "Characteristics of DBMS",
+          "Advantages of DBMS",
+          "Database users",
+        ],
+      },
+    ],
+    expectedTopicArrays: [
+      [
+        "Introduction to DBMS",
+        "Characteristics of DBMS",
+        "Advantages of DBMS",
+        "Database users",
+      ],
+    ],
+  },
+  {
     name: "messy PDF-extracted text with irregular spacing",
     rawInput: `  Unit 1 :  Algebra
 
