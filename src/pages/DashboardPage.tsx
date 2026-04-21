@@ -52,41 +52,69 @@ export const DashboardPage = () => {
   );
   const topSubject = subjectBreakdown[0];
 
+  // Calculate simple day streak
+  const currentStreak = useMemo(() => {
+    let streak = 0;
+    for (let i = 0; i < 7; i++) {
+      if (weeklyBars[6 - i] > 0) streak++;
+      else break;
+    }
+    return streak;
+  }, [weeklyBars]);
+
+  // Determine trend
+  const todayVal = weeklyBars[6];
+  const yesterdayVal = weeklyBars[5];
+  const trendString = todayVal > yesterdayVal 
+    ? `+${Math.round((todayVal - yesterdayVal) / 60)}h vs yesterday` 
+    : undefined;
+
   return (
     <DashboardContainer>
-      <GreetingSection userName={profile.name} message="Ready for a calm, focused study day?" />
+      <div className="animate-stagger-1">
+        <GreetingSection userName={profile.name} message="Ready for a calm, focused study day?" streak={currentStreak} />
+      </div>
 
-      <StatsSection
-        todayMinutes={formatMinutes(summary.todayMinutes)}
-        totalSessions={String(summary.totalSessions)}
-        focusScore={`${focusScore}%`}
-        topSubjectTime={topSubject ? formatMinutes(topSubject.minutes) : "--"}
-        topSubjectDetail={topSubject ? topSubject.subjectName : "No tracked study time yet"}
-        syllabusCompletion={`${syllabusCompletion.completionPercent}%`}
-        syllabusDetail={
-          syllabusCompletion.totalTopics > 0
-            ? `${syllabusCompletion.coveredTopics} of ${syllabusCompletion.totalTopics} topics covered`
-            : "Add topics in Syllabus Map"
-        }
-      />
+      <div className="animate-stagger-2">
+        <StatsSection
+          todayMinutes={formatMinutes(summary.todayMinutes)}
+          todayTrend={trendString}
+          totalSessions={String(summary.totalSessions)}
+          focusScore={`${focusScore}%`}
+          topSubjectTime={topSubject ? formatMinutes(topSubject.minutes) : "--"}
+          topSubjectDetail={topSubject ? topSubject.subjectName : "No tracked study time yet"}
+          syllabusCompletion={`${syllabusCompletion.completionPercent}%`}
+          syllabusDetail={
+            syllabusCompletion.totalTopics > 0
+              ? `${syllabusCompletion.coveredTopics} of ${syllabusCompletion.totalTopics} topics covered`
+              : "Add topics in Syllabus Map"
+          }
+        />
+      </div>
 
-      <SyllabusInsightsCard insights={syllabusInsights} />
+      <div className="animate-stagger-3">
+        <SyllabusInsightsCard insights={syllabusInsights} />
+      </div>
 
-      <FocusSnapshotCard
-        isCameraActive={focusTracking.isCameraActive}
-        attentionStatus={focusTracking.attentionStatus}
-        attentionScore={focusTracking.attentionScore}
-        distractionCount={focusTracking.distractionCount}
-        awayTimeMs={focusTracking.awayTime}
-        focusStreakMs={focusTracking.focusStreak}
-      />
+      <div className="animate-stagger-4">
+        <FocusSnapshotCard
+          isCameraActive={focusTracking.isCameraActive}
+          attentionStatus={focusTracking.attentionStatus}
+          attentionScore={focusTracking.attentionScore}
+          distractionCount={focusTracking.distractionCount}
+          awayTimeMs={focusTracking.awayTime}
+          focusStreakMs={focusTracking.focusStreak}
+        />
+      </div>
 
-      <div className="grid gap-5 xl:grid-cols-[1.05fr_0.95fr]">
+      <div className="grid gap-5 xl:grid-cols-[1.05fr_0.95fr] animate-stagger-5">
         <TimerSectionCard activeMinutes={profile.preferredMode === "deep-work" ? 50 : 25} />
         <SuggestionsCard suggestions={suggestions} />
       </div>
 
-      <AnalyticsPreviewCard points={weeklyBars} />
+      <div className="animate-stagger-5" style={{ animationDelay: '0.36s' }}>
+        <AnalyticsPreviewCard points={weeklyBars} />
+      </div>
     </DashboardContainer>
   );
 };

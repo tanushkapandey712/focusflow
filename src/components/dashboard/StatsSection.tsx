@@ -2,6 +2,7 @@ import { StatCard } from "../ui";
 
 interface StatsSectionProps {
   todayMinutes: string;
+  todayTrend?: string;
   totalSessions: string;
   focusScore: string;
   topSubjectTime: string;
@@ -12,6 +13,7 @@ interface StatsSectionProps {
 
 export const StatsSection = ({
   todayMinutes,
+  todayTrend,
   totalSessions,
   focusScore,
   topSubjectTime,
@@ -20,7 +22,7 @@ export const StatsSection = ({
   syllabusDetail,
 }: StatsSectionProps) => {
   const stats = [
-    { label: "Today", value: todayMinutes },
+    { label: "Today", value: todayMinutes, trend: todayTrend },
     { label: "Sessions", value: totalSessions },
     { label: "Focus", value: focusScore },
     { label: "Top Subject", value: topSubjectTime, detail: topSubjectDetail },

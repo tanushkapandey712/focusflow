@@ -3,9 +3,10 @@ import { GradientCard } from "../ui/GradientCard";
 interface GreetingSectionProps {
   userName: string;
   message?: string;
+  streak?: number;
 }
 
-export const GreetingSection = ({ userName, message }: GreetingSectionProps) => {
+export const GreetingSection = ({ userName, message, streak }: GreetingSectionProps) => {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 
@@ -13,8 +14,15 @@ export const GreetingSection = ({ userName, message }: GreetingSectionProps) => 
     <GradientCard tone="lavender" className="animate-fade-up p-6 sm:p-7">
       <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
         <div className="space-y-4">
-          <div className="surface-pill inline-flex px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-600 dark:text-slate-300">
-            Welcome back
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="surface-pill inline-flex px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-600 dark:text-slate-300">
+              Welcome back
+            </div>
+            {streak != null && streak > 0 && (
+              <div className="surface-pill inline-flex items-center gap-1.5 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-amber-700 dark:text-amber-300">
+                🔥 {streak}-day streak
+              </div>
+            )}
           </div>
           <div className="space-y-3">
             <h1 className="text-balance text-3xl font-semibold tracking-tight text-slate-900 dark:text-slate-100 sm:text-hero">
