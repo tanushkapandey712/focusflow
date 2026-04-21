@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { ArrowRight, Calendar, Clock3, Moon, Sparkles, Sun, Sunrise } from "lucide-react";
 import { Navigate, Link, useNavigate } from "react-router-dom";
 import { Button, Card } from "../components/ui";
@@ -11,7 +11,6 @@ import {
   getDayStudyMinutes,
   getSubjectAllocation,
   getWeeklyStudyMinutes,
-  formatTimeSlot,
 } from "../utils/timetable";
 
 const STUDY_TIME_OPTIONS = ["morning", "night", "flexible"] as const;
@@ -260,13 +259,21 @@ export const ScheduleSetupPage = () => {
           {/* Right: Preview */}
           <div className="space-y-4 animate-stagger-2">
             {!generatedTimetable ? (
-              <Card className="p-12 text-center text-slate-500 border-dashed border-2 shadow-soft">
-                <Calendar size={40} className="mx-auto mb-4 text-slate-300" />
-                <p className="text-lg font-semibold text-slate-700 dark:text-slate-200">
-                  Your timetable will appear here
-                </p>
-                <p className="mt-2 text-sm">
-                  Fill in your routine details and hit Generate to see your personalized schedule.
+              <Card className="relative flex h-full min-h-[440px] flex-col items-center justify-center overflow-hidden border-dashed border-2 border-slate-200/80 bg-slate-50/50 p-12 text-center shadow-none transition-all hover:border-brand-300/50 dark:border-white/10 dark:bg-slate-900/20">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(99,102,241,0.05)_0,transparent_100%)]" />
+                
+                <div className="relative mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-white shadow-soft dark:bg-slate-800">
+                  <Calendar size={32} className="text-brand-500" />
+                  <div className="absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full bg-cyan-100 text-cyan-600 shadow-sm dark:bg-sky-500/20 dark:text-sky-400">
+                    <Sparkles size={14} />
+                  </div>
+                </div>
+                
+                <h3 className="relative text-xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
+                  Ready to map your week?
+                </h3>
+                <p className="relative mt-3 max-w-sm text-sm leading-6 text-slate-500 dark:text-slate-400">
+                  Tell us your daily rhythm on the left, and we'll craft a perfectly balanced study schedule tailored to your goals.
                 </p>
               </Card>
             ) : (
@@ -276,7 +283,7 @@ export const ScheduleSetupPage = () => {
                   <Card className="p-4 shadow-soft text-center">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Weekly Study</p>
                     <p className="mt-1 text-2xl font-semibold text-slate-900 dark:text-slate-100 tabular-nums">
-                      {Math.round(weeklyMinutes / 60)}h {weeklyMinutes % 60}m
+                      {Math.floor(weeklyMinutes / 60)}h {weeklyMinutes % 60}m
                     </p>
                   </Card>
                   <Card className="p-4 shadow-soft text-center">
@@ -296,7 +303,7 @@ export const ScheduleSetupPage = () => {
                     {subjectAllocation.map((item) => (
                       <div key={item.subjectId} className="flex items-center justify-between text-sm">
                         <span className="font-medium text-slate-700 dark:text-slate-200">{item.label}</span>
-                        <span className="tabular-nums text-slate-500">{Math.round(item.minutes / 60)}h {item.minutes % 60}m / week</span>
+                        <span className="tabular-nums text-slate-500">{Math.floor(item.minutes / 60)}h {item.minutes % 60}m / week</span>
                       </div>
                     ))}
                   </Card>
