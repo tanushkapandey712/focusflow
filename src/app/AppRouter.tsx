@@ -6,6 +6,7 @@ import { FocusTrackingProvider } from "../hooks/FocusTrackingProvider";
 import { AnalyticsPage } from "../pages/AnalyticsPage";
 import { DashboardPage } from "../pages/DashboardPage";
 import { GoalsPage } from "../pages/GoalsPage";
+import { MilestonesPage } from "../pages/MilestonesPage";
 import { LandingPage } from "../pages/LandingPage";
 import { ProfileSetupPage } from "../pages/ProfileSetupPage";
 import { SessionHistoryPage } from "../pages/SessionHistoryPage";
@@ -36,6 +37,7 @@ export const AppRouter = () => (
         <Route path="/syllabus/:subjectId" element={<SubjectSyllabusDetailPage />} />
         <Route path="/goals" element={<GoalsPage />} />
         <Route path="/analytics" element={<AnalyticsPage />} />
+        <Route path="/milestones" element={<MilestonesPage />} />
         <Route path="/history" element={<SessionHistoryPage />} />
         <Route path="/settings" element={<SettingsPage />} />
       </Route>

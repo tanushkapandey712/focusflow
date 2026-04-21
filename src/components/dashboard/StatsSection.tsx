@@ -36,6 +36,7 @@ export const StatsSection = ({
           key={item.label}
           label={item.label}
           value={item.value}
+          trend={item.trend}
           detail={item.detail}
           compact
         />

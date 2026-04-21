@@ -67,6 +67,11 @@ export interface StudySession {
   actualMinutes: number;
   distractionCount?: number;
   distractionTags?: string[];
+  tabSwitchCount?: number;
+  tabAwayMs?: number;
+  inactivityCount?: number;
+  inactivityMs?: number;
+  stabilityScore?: number;
   goal?: string;
   note?: string;
   syllabusTopic?: StudySessionSyllabusLink;

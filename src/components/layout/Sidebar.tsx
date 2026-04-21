@@ -1,4 +1,4 @@
-import { BarChart3, BookOpenText, Clock3, LayoutDashboard, ListChecks, Settings2, Sparkles, Target } from "lucide-react";
+import { Award, BarChart3, BookOpenText, Clock3, LayoutDashboard, ListChecks, Settings2, Sparkles, Target } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { cn } from "../../lib/cn";
 
@@ -8,6 +8,7 @@ const navItems = [
   { to: "/syllabus", label: "Syllabus Map", icon: BookOpenText },
   { to: "/goals", label: "Goals", icon: Target },
   { to: "/analytics", label: "Analytics", icon: BarChart3 },
+  { to: "/milestones", label: "Milestones", icon: Award },
   { to: "/history", label: "Session History", icon: ListChecks },
   { to: "/settings", label: "Settings", icon: Settings2 },
 ];

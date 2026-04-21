@@ -7,6 +7,7 @@ import { StatsSection } from "../components/dashboard/StatsSection";
 import { SuggestionsCard } from "../components/dashboard/SuggestionsCard";
 import { SyllabusInsightsCard } from "../components/dashboard/SyllabusInsightsCard";
 import { TimerSectionCard } from "../components/dashboard/TimerSectionCard";
+import { WeakAreasCard } from "../components/dashboard/WeakAreasCard";
 import { useFocusFlowData } from "../hooks/useFocusFlowData";
 import { useFocusTracking } from "../hooks/useFocusTracking";
 import { formatMinutes } from "../utils/date";
@@ -15,6 +16,7 @@ import {
   getSubjectStudyBreakdown,
   getSyllabusCompletionSummary,
 } from "../utils/syllabusProgress";
+import { detectWeakAreas } from "../utils/weakAreas";
 
 export const DashboardPage = () => {
   const { summary, sessions, subjects, profile } = useFocusFlowData();
@@ -37,7 +39,14 @@ export const DashboardPage = () => {
       )
     : 0;
 
-  const suggestions = generateRecommendations(sessions, subjects);
+  const suggestions = useMemo(
+    () => generateRecommendations(sessions, subjects),
+    [sessions, subjects],
+  );
+  const weakAreas = useMemo(
+    () => detectWeakAreas(subjects, sessions),
+    [subjects, sessions],
+  );
   const subjectBreakdown = useMemo(
     () => getSubjectStudyBreakdown(sessions, subjects),
     [sessions, subjects],
@@ -115,6 +124,12 @@ export const DashboardPage = () => {
       <div className="animate-stagger-5" style={{ animationDelay: '0.36s' }}>
         <AnalyticsPreviewCard points={weeklyBars} />
       </div>
+
+      {weakAreas.length > 0 && (
+        <div className="animate-stagger-5" style={{ animationDelay: '0.44s' }}>
+          <WeakAreasCard weakAreas={weakAreas} />
+        </div>
+      )}
     </DashboardContainer>
   );
 };
