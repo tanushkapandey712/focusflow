@@ -96,22 +96,76 @@ export const evaluateMilestones = (
     }
   };
 
-  return MILESTONE_DEFINITIONS.map((def) => {
-    const current = getValue(def.category);
-    const achieved = current >= def.target;
-    const progress = Math.min(100, Math.round((current / def.target) * 100));
-
-    return {
-      id: def.id,
-      category: def.category,
-      title: def.title,
-      description: def.description,
-      target: def.target,
-      current,
-      achieved,
-      progress,
-      icon: def.icon,
-    };
+  const categories: MilestoneCategory[] = ["sessions", "time", "streak", "topics", "subjects"];
+  
+  return categories.flatMap((category) => {
+    const current = getValue(category);
+    const defs = MILESTONE_DEFINITIONS.filter((d) => d.category === category);
+    const results: Milestone[] = [];
+    
+    let highestTarget = 0;
+    for (const def of defs) {
+      if (current >= def.target) {
+        results.push({
+          ...def,
+          current,
+          achieved: true,
+          progress: 100,
+        });
+        highestTarget = Math.max(highestTarget, def.target);
+      }
+    }
+    
+    const unachieved = defs.find((d) => current < d.target);
+    
+    if (unachieved) {
+      results.push({
+        ...unachieved,
+        current,
+        achieved: false,
+        progress: Math.min(100, Math.round((current / unachieved.target) * 100)),
+      });
+    } else {
+      let nextTarget = highestTarget;
+      let step = 10;
+      if (category === "sessions") step = 50;
+      else if (category === "time") step = 600;
+      else if (category === "streak") step = 30;
+      else if (category === "topics") step = 25;
+      else if (category === "subjects") step = 5;
+      
+      let dynamicCount = 1;
+      while (current >= nextTarget + step) {
+        nextTarget += step;
+        results.push({
+          id: `${category}-dyn-${nextTarget}`,
+          category,
+          title: `Elite ${category.charAt(0).toUpperCase() + category.slice(1)} ${dynamicCount}`,
+          description: `Reach ${nextTarget} in ${category}`,
+          target: nextTarget,
+          current,
+          achieved: true,
+          progress: 100,
+          icon: "🌟",
+        });
+        dynamicCount++;
+      }
+      
+      nextTarget += step;
+      results.push({
+        id: `${category}-dyn-${nextTarget}`,
+        category,
+        title: `Next Level: ${category.charAt(0).toUpperCase() + category.slice(1)}`,
+        description: `Reach ${nextTarget} in ${category}`,
+        target: nextTarget,
+        current,
+        achieved: false,
+        progress: Math.min(100, Math.round((current / nextTarget) * 100)),
+        icon: "🌟",
+      });
+    }
+    
+    return results;
   });
 };
 

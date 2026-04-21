@@ -4,13 +4,7 @@ import { SubjectBadge } from "../components/subjects/SubjectBadge";
 import { Button, Card, SectionContainer } from "../components/ui";
 import { useFocusFlowData } from "../hooks/useFocusFlowData";
 import type { InstitutionType, StudyGoal, UserProfile } from "../types/models";
-import {
-  getCompletedMinutesByGoal,
-  getDefaultGoalTargetMinutes,
-  goalTitlesToText,
-  normalizeGoalTitle,
-  parseGoalTitles,
-} from "../utils/goals";
+} from "../types/models";
 import {
   getClassOrCourseLabel,
   getInstitutionLabel,
@@ -31,7 +25,6 @@ const institutionTypeOptions: Array<{ value: InstitutionType; label: string }> =
 
 export const SettingsPage = () => {
   const { profile, goals, sessions, subjects, setGoals, setProfile, setSubjects } = useFocusFlowData();
-  const initialGoalsText = useMemo(() => goalTitlesToText(goals), [goals]);
   const initialSubjectsText = useMemo(() => subjectNamesToText(subjects), [subjects]);
   const [name, setName] = useState(profile.name);
   const [institutionType, setInstitutionType] = useState<InstitutionType>(getSavedInstitutionType(profile));
@@ -40,7 +33,6 @@ export const SettingsPage = () => {
   const [institutionEndTime, setInstitutionEndTime] = useState(profile.institutionEndTime ?? "");
   const [studyType, setStudyType] = useState<UserProfile["preferredMode"]>(profile.preferredMode);
   const [subjectsText, setSubjectsText] = useState(initialSubjectsText);
-  const [goalsText, setGoalsText] = useState(initialGoalsText);
   const [status, setStatus] = useState<"idle" | "saved">("idle");
   const [error, setError] = useState("");
 
@@ -52,13 +44,10 @@ export const SettingsPage = () => {
     setInstitutionEndTime(profile.institutionEndTime ?? "");
     setStudyType(profile.preferredMode);
     setSubjectsText(initialSubjectsText);
-    setGoalsText(initialGoalsText);
     setStatus("idle");
     setError("");
-  }, [initialGoalsText, initialSubjectsText, profile]);
+  }, [initialSubjectsText, profile]);
 
-  const normalizedGoalText = useMemo(() => parseGoalTitles(goalsText).join("\n"), [goalsText]);
-  const normalizedInitialGoalText = useMemo(() => parseGoalTitles(initialGoalsText).join("\n"), [initialGoalsText]);
   const parsedSubjectNames = useMemo(() => parseSubjectNames(subjectsText), [subjectsText]);
   const previewSubjects = useMemo(
     () => buildSubjectsFromNames(parsedSubjectNames, subjects),
@@ -86,9 +75,7 @@ export const SettingsPage = () => {
     institutionStartTime !== (profile.institutionStartTime ?? "") ||
     institutionEndTime !== (profile.institutionEndTime ?? "") ||
     studyType !== profile.preferredMode ||
-    normalizedSubjectText !== normalizedInitialSubjectText ||
-    normalizedGoalText !== normalizedInitialGoalText;
-  const completedMinutesByGoal = useMemo(() => getCompletedMinutesByGoal(sessions), [sessions]);
+    normalizedSubjectText !== normalizedInitialSubjectText;
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -123,21 +110,7 @@ export const SettingsPage = () => {
       return;
     }
 
-    const parsedTitles = parseGoalTitles(goalsText);
-    const existingGoalsByTitle = new Map(goals.map((goal) => [normalizeGoalTitle(goal.title), goal]));
 
-    const nextGoals: StudyGoal[] = parsedTitles.map((title) => {
-      const normalizedTitle = normalizeGoalTitle(title);
-      const existingGoal = existingGoalsByTitle.get(normalizedTitle);
-
-      return {
-        id: existingGoal?.id ?? crypto.randomUUID(),
-        title,
-        targetMinutes: existingGoal?.targetMinutes ?? getDefaultGoalTargetMinutes(studyType),
-        completedMinutes: completedMinutesByGoal[normalizedTitle] ?? existingGoal?.completedMinutes ?? 0,
-        dueDate: existingGoal?.dueDate,
-      };
-    });
 
     setProfile({
       ...profile,
@@ -151,9 +124,7 @@ export const SettingsPage = () => {
       institutionEndTime,
     });
     setSubjects(previewSubjects);
-    setGoals(nextGoals);
     setSubjectsText(subjectNamesToText(previewSubjects));
-    setGoalsText(goalTitlesToText(nextGoals));
     setError("");
     setStatus("saved");
   };
@@ -314,29 +285,7 @@ export const SettingsPage = () => {
             </div>
           </Card>
 
-          <Card className="space-y-5 p-5 sm:p-6">
-            <div className="space-y-1">
-              <h3 className="text-xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">Goals</h3>
-              <p className="text-sm leading-6 text-slate-500 dark:text-slate-400">
-                Add one goal per line. Reuse the same goal text in the timer to track progress automatically.
-              </p>
-            </div>
 
-            <label className="block space-y-1.5">
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Goal list</span>
-              <textarea
-                value={goalsText}
-                onChange={(event) => {
-                  setGoalsText(event.target.value);
-                  setStatus("idle");
-                  setError("");
-                }}
-                rows={6}
-                placeholder={"Finish chapter summary\nPractice past paper\nReview chemistry notes"}
-                className="field-surface min-h-36 resize-y"
-              />
-            </label>
-          </Card>
 
           <Card className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
             <div className="space-y-1">
