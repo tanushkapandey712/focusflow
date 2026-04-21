@@ -50,6 +50,7 @@ export const SyllabusUnitAccordion = ({
   const unitCompletion = getUnitCompletionPercent(unit);
   const visibleTopics = showAllTopics ? unit.topics : unit.topics.slice(0, DEFAULT_VISIBLE_TOPICS);
   const bodyId = `syllabus-unit-panel-${unit.id}`;
+  const handleToggle = () => onToggle();
 
   const saveUnitTitle = () => {
     const nextTitle = unitDraft.trim();
@@ -76,13 +77,13 @@ export const SyllabusUnitAccordion = ({
   return (
     <Card className="overflow-hidden p-0">
       <div className="px-5 py-4 sm:px-6">
-        <div className="flex items-start gap-3">
+        <div className="relative flex items-start gap-3">
           <button
             type="button"
-            onClick={onToggle}
+            onClick={handleToggle}
             aria-expanded={isExpanded}
             aria-controls={bodyId}
-            className="min-w-0 flex-1 cursor-pointer text-left transition-colors duration-200 hover:text-slate-900 dark:hover:text-slate-100"
+            className="relative z-10 min-w-0 flex-1 cursor-pointer text-left transition-colors duration-200 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-100/70 dark:hover:text-slate-100 dark:focus-visible:ring-brand-900/40"
           >
             <div className="min-w-0">
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
@@ -117,14 +118,15 @@ export const SyllabusUnitAccordion = ({
             </div>
           </button>
 
-          <div className="relative z-10 flex shrink-0 items-start gap-2">
+          <div className="relative z-20 flex shrink-0 items-start gap-2 pointer-events-auto">
             <Button
               variant="secondary"
-              onClick={() => {
+              onClick={(event) => {
+                event.stopPropagation();
                 setUnitDraft(unit.title);
                 setIsEditingUnit(true);
                 if (!isExpanded) {
-                  onToggle();
+                  handleToggle();
                 }
               }}
               className="h-8 w-8 rounded-full p-0"
@@ -135,7 +137,8 @@ export const SyllabusUnitAccordion = ({
             </Button>
             <Button
               variant="secondary"
-              onClick={() => {
+              onClick={(event) => {
+                event.stopPropagation();
                 if (
                   window.confirm(
                     `Delete "${unit.title}" and all of its topics from ${subjectName}?`,
@@ -152,12 +155,15 @@ export const SyllabusUnitAccordion = ({
             </Button>
             <button
               type="button"
-              onClick={onToggle}
+              onClick={(event) => {
+                event.stopPropagation();
+                handleToggle();
+              }}
               aria-label={isExpanded ? `Collapse ${unit.title}` : `Expand ${unit.title}`}
               aria-expanded={isExpanded}
               aria-controls={bodyId}
               className={cn(
-                "inline-flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-full border border-slate-200/80 bg-slate-100 text-slate-600 shadow-soft transition-all duration-200 hover:border-slate-300/90 hover:bg-slate-200/80 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-100/70 dark:border-white/10 dark:bg-slate-800 dark:text-slate-200 dark:hover:border-white/15 dark:hover:bg-slate-700/80 dark:focus-visible:ring-brand-900/40",
+                "relative z-20 inline-flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-full border border-slate-200/80 bg-slate-100 text-slate-600 shadow-soft transition-all duration-200 hover:border-slate-300/90 hover:bg-slate-200/80 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-100/70 dark:border-white/10 dark:bg-slate-800 dark:text-slate-200 dark:hover:border-white/15 dark:hover:bg-slate-700/80 dark:focus-visible:ring-brand-900/40",
                 isExpanded && "rotate-180",
               )}
             >
@@ -168,6 +174,7 @@ export const SyllabusUnitAccordion = ({
       </div>
 
       <div
+        aria-hidden={!isExpanded}
         className={cn(
           "grid transition-[grid-template-rows,opacity] duration-300 ease-out",
           isExpanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0",

@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef } from "react";
-import { Pause, Play, TimerReset, Timer as TimerIcon } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Pause, Play, TimerReset, Timer as TimerIcon, X } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "../../components/ui";
 import { cn } from "../../lib/cn";
@@ -31,8 +31,11 @@ export const PersistentTimerWidget = () => {
     pause,
     resume,
   } = useStudyTimerSession();
-  const defaultTitleRef = useRef<string>(typeof document !== "undefined" ? document.title || DEFAULT_TITLE : DEFAULT_TITLE);
+  const defaultTitleRef = useRef<string>(
+    typeof document !== "undefined" ? document.title || DEFAULT_TITLE : DEFAULT_TITLE,
+  );
   const previousStatusRef = useRef(status);
+  const [isMiniTimerVisible, setIsMiniTimerVisible] = useState(true);
 
   const selectedSubject = useMemo(
     () => subjects.find((subject) => subject.id === selectedSubjectId),
@@ -58,6 +61,12 @@ export const PersistentTimerWidget = () => {
   const subjectLabel = selectedSubject?.name ?? "Focus session";
   const canResume = status === "paused";
   const canPause = status === "running";
+
+  useEffect(() => {
+    if (status === "idle" || location.pathname === "/timer") {
+      setIsMiniTimerVisible(true);
+    }
+  }, [location.pathname, status]);
 
   useEffect(() => {
     if (status === "running" || status === "paused") {
@@ -95,10 +104,35 @@ export const PersistentTimerWidget = () => {
     return null;
   }
 
+  if (!isMiniTimerVisible) {
+    return (
+      <div className="pointer-events-none fixed bottom-24 right-4 z-40 lg:bottom-6">
+        <button
+          type="button"
+          onClick={() => setIsMiniTimerVisible(true)}
+          aria-label="Reopen mini timer"
+          className="pointer-events-auto inline-flex h-14 items-center gap-2 rounded-full border border-blue-200/75 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(239,246,255,0.9))] px-4 text-sm font-semibold text-blue-700 shadow-[0_24px_55px_-34px_rgba(37,99,235,0.45)] backdrop-blur transition duration-200 hover:-translate-y-0.5 hover:border-blue-300/90 hover:bg-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-100/70 dark:border-blue-400/15 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.96),rgba(15,23,42,0.9))] dark:text-blue-100 dark:hover:border-blue-400/25 dark:hover:bg-slate-950/95 dark:focus-visible:ring-brand-900/40"
+        >
+          <TimerIcon size={16} />
+          <span>{formatTimer(remainingSec)}</span>
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="pointer-events-none fixed bottom-24 right-4 z-40 w-[min(22rem,calc(100vw-2rem))] lg:bottom-6">
-      <div className="pointer-events-auto soft-surface overflow-hidden rounded-[1.7rem] border border-blue-200/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.94),rgba(239,246,255,0.82))] p-4 shadow-[0_28px_70px_-38px_rgba(37,99,235,0.45)] dark:border-blue-400/12 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.94),rgba(15,23,42,0.84))]">
-        <div className="flex items-start justify-between gap-3">
+      <div className="pointer-events-auto group soft-surface overflow-hidden rounded-[1.7rem] border border-blue-200/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.94),rgba(239,246,255,0.82))] p-4 shadow-[0_28px_70px_-38px_rgba(37,99,235,0.45)] dark:border-blue-400/12 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.94),rgba(15,23,42,0.84))]">
+        <button
+          type="button"
+          onClick={() => setIsMiniTimerVisible(false)}
+          aria-label="Hide mini timer"
+          className="absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-full border border-rose-200/80 bg-white/80 text-rose-500 opacity-80 shadow-soft transition duration-200 hover:border-rose-300 hover:bg-rose-50 hover:text-rose-600 group-hover:opacity-100 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-rose-100/80 dark:border-rose-400/15 dark:bg-slate-950/70 dark:text-rose-300 dark:hover:border-rose-400/25 dark:hover:bg-rose-500/10 dark:hover:text-rose-200 dark:focus-visible:ring-rose-500/20"
+        >
+          <X size={14} />
+        </button>
+
+        <div className="flex items-start justify-between gap-3 pr-9">
           <div className="min-w-0">
             <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-blue-700/85 dark:text-blue-100/70">
               <TimerIcon size={14} />
