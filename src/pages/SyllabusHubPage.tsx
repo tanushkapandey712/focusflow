@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { BookOpenText, Plus } from "lucide-react";
+import { BookOpenText, Plus, Search, ChevronsUpDown, ChevronsDownUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { SyllabusImportCard } from "../components/syllabus/SyllabusImportCard";
 import { SyllabusSubjectCard } from "../components/syllabus/SyllabusSubjectCard";
@@ -20,6 +20,9 @@ export const SyllabusHubPage = () => {
     useFocusFlowData();
   const [newSubjectName, setNewSubjectName] = useState("");
   const [error, setError] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [globalExpandState, setGlobalExpandState] = useState<boolean | undefined>(undefined);
+  const [remountKey, setRemountKey] = useState(0);
 
   const handleAddSubject = () => {
     const title = newSubjectName.trim();
@@ -169,6 +172,31 @@ export const SyllabusHubPage = () => {
     handleSubjectUnitsUpdate(subject, nextUnits);
   };
 
+  const handleExpandAll = () => {
+    setGlobalExpandState(true);
+    setRemountKey(k => k + 1);
+  };
+
+  const handleCollapseAll = () => {
+    setGlobalExpandState(false);
+    setRemountKey(k => k + 1);
+  };
+
+  const filteredSubjects = subjects.filter((subject) => {
+    if (!searchQuery.trim()) return true;
+    
+    const query = searchQuery.toLowerCase();
+    const syllabusUnits = getSubjectSyllabus(subject.id);
+    
+    if (subject.name.toLowerCase().includes(query)) return true;
+    
+    return syllabusUnits.some(
+      (unit) =>
+        unit.title.toLowerCase().includes(query) ||
+        unit.topics.some((topic) => topic.title.toLowerCase().includes(query))
+    );
+  });
+
   return (
     <DashboardContainer>
       <SectionContainer
@@ -226,21 +254,63 @@ export const SyllabusHubPage = () => {
             </p>
           </Card>
         ) : (
-          <div className="grid gap-4 xl:grid-cols-2">
-            {subjects.map((subject) => (
-              <SyllabusSubjectCard
-                key={subject.id}
-                subject={{ ...subject, syllabusUnits: getSubjectSyllabus(subject.id) }}
-                onAddUnit={handleAddUnit}
-                onAddTopic={handleAddTopic}
-                onRenameUnit={handleRenameUnit}
-                onDeleteUnit={handleDeleteUnit}
-                onRenameTopic={handleRenameTopic}
-                onDeleteTopic={handleDeleteTopic}
-                onToggleTopic={handleToggleTopic}
-                onOpenSubject={(subjectId) => navigate(`/syllabus/${subjectId}`)}
-              />
-            ))}
+          <div className="space-y-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="relative max-w-sm flex-1">
+                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                  <Search size={16} />
+                </div>
+                <input
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search subjects, units, or topics..."
+                  className="field-surface pl-10"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <Button variant="secondary" onClick={handleExpandAll} className="rounded-full px-4 text-xs">
+                  <ChevronsUpDown size={14} />
+                  Expand All
+                </Button>
+                <Button variant="secondary" onClick={handleCollapseAll} className="rounded-full px-4 text-xs">
+                  <ChevronsDownUp size={14} />
+                  Collapse All
+                </Button>
+              </div>
+            </div>
+
+            {filteredSubjects.length === 0 ? (
+              <div className="rounded-[1.5rem] border border-dashed border-slate-200 bg-slate-50/85 px-6 py-10 text-center dark:border-white/10 dark:bg-slate-900/60">
+                <p className="text-sm font-medium text-slate-600 dark:text-slate-300">
+                  No matches found for "{searchQuery}"
+                </p>
+                <Button 
+                  variant="secondary" 
+                  onClick={() => setSearchQuery("")} 
+                  className="mt-4 rounded-full"
+                >
+                  Clear search
+                </Button>
+              </div>
+            ) : (
+              <div className="grid gap-4 xl:grid-cols-2">
+                {filteredSubjects.map((subject) => (
+                  <SyllabusSubjectCard
+                    key={`${subject.id}-${remountKey}`}
+                    defaultExpanded={globalExpandState ?? false}
+                    subject={{ ...subject, syllabusUnits: getSubjectSyllabus(subject.id) }}
+                    onAddUnit={handleAddUnit}
+                    onAddTopic={handleAddTopic}
+                    onRenameUnit={handleRenameUnit}
+                    onDeleteUnit={handleDeleteUnit}
+                    onRenameTopic={handleRenameTopic}
+                    onDeleteTopic={handleDeleteTopic}
+                    onToggleTopic={handleToggleTopic}
+                    onOpenSubject={(subjectId) => navigate(`/syllabus/${subjectId}`)}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         )}
       </SectionContainer>

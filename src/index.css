@@ -89,6 +89,22 @@
   .text-balance {
     text-wrap: balance;
   }
+
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Staggered entrance animations */
+.animate-stagger-1 { animation: fade-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.06s both; }
+.animate-stagger-2 { animation: fade-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.12s both; }
+.animate-stagger-3 { animation: fade-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.18s both; }
+.animate-stagger-4 { animation: fade-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.24s both; }
+.animate-stagger-5 { animation: fade-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.30s both; }
+
+@keyframes fade-up {
+  0% { opacity: 0; transform: translateY(16px); }
+  100% { opacity: 1; transform: translateY(0); }
 }
 
 .soft-surface::before {

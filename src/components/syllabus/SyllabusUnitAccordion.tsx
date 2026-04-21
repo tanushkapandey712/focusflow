@@ -10,7 +10,7 @@ import {
 import { SyllabusTopicRow } from "./SyllabusTopicRow";
 import { cn } from "../../lib/cn";
 
-const DEFAULT_VISIBLE_TOPICS = 5;
+const DEFAULT_VISIBLE_TOPICS = 8;
 
 interface SyllabusUnitAccordionProps {
   subjectName: string;
@@ -81,6 +81,12 @@ export const SyllabusUnitAccordion = ({
           <button
             type="button"
             onClick={handleToggle}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                handleToggle();
+              }
+            }}
             aria-expanded={isExpanded}
             aria-controls={bodyId}
             className="relative z-10 min-w-0 flex-1 cursor-pointer text-left transition-colors duration-200 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-100/70 dark:hover:text-slate-100 dark:focus-visible:ring-brand-900/40"
@@ -181,7 +187,6 @@ export const SyllabusUnitAccordion = ({
         )}
       >
         <div id={bodyId} className="overflow-hidden">
-          {isExpanded ? (
             <div className="border-t border-slate-200/80 px-5 py-4 dark:border-white/10 sm:px-6">
               {isEditingUnit ? (
                 <div className="mb-4 rounded-[1.2rem] bg-slate-50/88 p-3 dark:bg-slate-900/68">
@@ -250,7 +255,9 @@ export const SyllabusUnitAccordion = ({
                     onClick={onToggleShowAll}
                     className="rounded-full px-4 text-xs"
                   >
-                    {showAllTopics ? "Show less" : "Show all topics"}
+                    {showAllTopics
+                      ? "Show fewer topics"
+                      : `Show all ${unit.topics.length} topics`}
                   </Button>
                 </div>
               ) : null}
@@ -259,6 +266,12 @@ export const SyllabusUnitAccordion = ({
                 <input
                   value={newTopicTitle}
                   onChange={(event) => setNewTopicTitle(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      handleAddTopic();
+                    }
+                  }}
                   placeholder="Add a topic"
                   className="field-surface"
                 />
@@ -272,7 +285,6 @@ export const SyllabusUnitAccordion = ({
                 </Button>
               </div>
             </div>
-          ) : null}
         </div>
       </div>
     </Card>
