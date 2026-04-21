@@ -347,6 +347,36 @@ Coordinate
       ["Triangles", "Coordinate Geometry"],
     ],
   },
+  {
+    name: "ocr-style spacing and punctuation normalize safely",
+    rawInput: `Unit 1 : Differential Equations
+Series solution of second order ordinary differential equations with variable coefficient (
+Frobenius method ) ; Bessel and Legendre equations
+
+Unit-2 : Geometry
+| Triangles
+Coordinate   Geometry`,
+    expectedParsedUnits: [
+      {
+        title: "Unit 1: Differential Equations",
+        topics: [
+          "Series solution of second order ordinary differential equations with variable coefficient (Frobenius method)",
+          "Bessel and Legendre equations",
+        ],
+      },
+      {
+        title: "Unit 2: Geometry",
+        topics: ["Triangles", "Coordinate Geometry"],
+      },
+    ],
+    expectedTopicArrays: [
+      [
+        "Series solution of second order ordinary differential equations with variable coefficient (Frobenius method)",
+        "Bessel and Legendre equations",
+      ],
+      ["Triangles", "Coordinate Geometry"],
+    ],
+  },
 ];
 
 export const runSyllabusParserValidation = (): SyllabusParserValidationSummary => {

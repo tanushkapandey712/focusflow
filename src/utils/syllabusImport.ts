@@ -21,6 +21,7 @@ const COMMA_SPLIT_PATTERN = /\s*,\s*/;
 const COMMA_FRAGMENT_BLOCKER_PATTERN = /^(?:and|or)$/i;
 const TRAILING_CONNECTIVE_PATTERN =
   /\b(?:and|or|of|the|to|in|for|with|on|by|from|into|using|based|including|through)\s*$/i;
+const TRAILING_OPEN_DELIMITER_PATTERN = /(?:\(|\[|\/|&)\s*$/;
 const LOWERCASE_CONTINUATION_PATTERN =
   /^(?:[a-z(]|and\b|or\b|of\b|the\b|to\b|in\b|for\b|with\b|on\b|by\b|from\b|using\b|based\b|including\b|through\b)/;
 
@@ -32,7 +33,18 @@ interface UnitHeadingMatch {
 const normalizeCharacters = (value: string) =>
   value
     .replace(/\u00a0/g, " ")
+    .replace(/\u00ad/g, "")
+    .replace(/[\u200b-\u200d\ufeff]/g, "")
     .replace(/[\u2013\u2014]/g, "-");
+
+const normalizeLineNoise = (value: string) =>
+  value
+    .replace(/[|¦]+/g, " ")
+    .replace(/[ \t]*([,;:])[ \t]*/g, "$1 ")
+    .replace(/[ \t]+([.?!])/g, "$1")
+    .replace(/([([])[ \t]+/g, "$1")
+    .replace(/[ \t]+([)\]])/g, "$1")
+    .replace(/^[~`]+/g, "");
 
 const collapseInternalWhitespace = (value: string) =>
   value
@@ -40,7 +52,7 @@ const collapseInternalWhitespace = (value: string) =>
     .replace(/[ ]{2,}/g, " ");
 
 const sanitizeLine = (value: string) =>
-  collapseInternalWhitespace(normalizeCharacters(value)).trim();
+  collapseInternalWhitespace(normalizeLineNoise(normalizeCharacters(value))).trim();
 
 const normalizeUnitText = (value: string) =>
   sanitizeLine(value)
@@ -223,6 +235,10 @@ const shouldMergeWrappedLine = (
     return true;
   }
 
+  if (TRAILING_OPEN_DELIMITER_PATTERN.test(previous)) {
+    return true;
+  }
+
   if (!/[.!?:;]$/.test(previous) && LOWERCASE_CONTINUATION_PATTERN.test(current)) {
     return true;
   }
@@ -244,7 +260,10 @@ const mergeWrappedLine = (previousLine: string, currentLine: string) => {
 };
 
 export const normalizeRawText = (text: string) => {
-  const normalizedSource = normalizeCharacters(text).replace(/\r\n?/g, "\n");
+  const normalizedSource = normalizeCharacters(text)
+    .replace(/\r\n?/g, "\n")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n");
   const mergedLines = normalizedSource.split("\n").reduce<string[]>((lines, rawLine) => {
     const sanitized = sanitizeLine(rawLine);
 

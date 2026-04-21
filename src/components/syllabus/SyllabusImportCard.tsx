@@ -6,6 +6,7 @@ import { extractTextFromPdfFile } from "../../utils/pdfImport";
 import { createSyllabusTopic, createSyllabusUnit } from "../../utils/syllabus";
 import {
   moveListItem,
+  normalizeRawText,
   normalizeReviewUnits,
   parseSyllabusText,
 } from "../../utils/syllabusImport";
@@ -68,17 +69,25 @@ export const SyllabusImportCard = ({ subjects, onSaveImport }: SyllabusImportCar
     }
 
     setIsExtractingPdf(true);
+    setPdfStatus("Reading PDF...");
 
     try {
-      const extractedText = await extractTextFromPdfFile(file);
+      const extractionResult = await extractTextFromPdfFile(file, {
+        onStatus: (message) => setPdfStatus(message),
+      });
+      const normalizedPreviewText = normalizeRawText(extractionResult.text);
 
-      if (!extractedText.trim()) {
+      if (!(normalizedPreviewText || extractionResult.text).trim()) {
         setError("We could not extract readable text from that PDF.");
         return;
       }
 
-      setRawText(extractedText);
-      setPdfStatus(`Extracted text from ${file.name}. Review and edit it below before parsing.`);
+      setRawText(normalizedPreviewText || extractionResult.text);
+      setPdfStatus(
+        extractionResult.method === "ocr"
+          ? `No readable text layer was found in ${file.name}, so OCR extracted text from page ${extractionResult.ocrPages} and cleaned it up for review below.`
+          : `Extracted text from ${file.name} and cleaned it up for review below.`,
+      );
     } catch (pdfError) {
       setError(
         pdfError instanceof Error
@@ -101,7 +110,18 @@ export const SyllabusImportCard = ({ subjects, onSaveImport }: SyllabusImportCar
       return;
     }
 
-    const parsedUnits = parseSyllabusText(rawText);
+    const normalizedInput = normalizeRawText(rawText);
+
+    if (!normalizedInput) {
+      setError("Paste the syllabus text before parsing it.");
+      return;
+    }
+
+    if (normalizedInput !== rawText) {
+      setRawText(normalizedInput);
+    }
+
+    const parsedUnits = parseSyllabusText(normalizedInput);
 
     if (parsedUnits.length === 0) {
       setError("We could not identify units or topics from that text. Adjust it and try again.");
@@ -278,7 +298,7 @@ export const SyllabusImportCard = ({ subjects, onSaveImport }: SyllabusImportCar
                   {isExtractingPdf ? "Extracting PDF..." : "Upload PDF"}
                 </Button>
                 <p className="text-xs leading-6 text-slate-500 dark:text-slate-400">
-                  Upload a syllabus PDF or paste text directly. The extracted text stays editable here before parsing.
+                  Upload a syllabus PDF or paste text directly. FocusFlow will try normal PDF extraction first, then OCR if the file is image-based.
                 </p>
               </div>
               {hasPreviewText ? (
