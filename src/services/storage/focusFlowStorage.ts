@@ -28,6 +28,8 @@ const defaultProfile: UserProfile = {
   preferredMode: "pomodoro",
   isAuthenticated: false,
   hasCompletedProfileSetup: false,
+  hasCompletedSyllabusSetup: false,
+  hasCompletedScheduleSetup: false,
 };
 
 const getValidInstitutionType = (value: unknown): InstitutionType | undefined =>
@@ -276,6 +278,9 @@ export const focusFlowStorage: FocusFlowStorageAPI = {
         typeof stored.institutionEndTime === "string" ? stored.institutionEndTime : undefined,
       isAuthenticated: stored.isAuthenticated === true && hasVerifiedEmail,
       hasCompletedProfileSetup: stored.hasCompletedProfileSetup === true && hasVerifiedEmail,
+      hasCompletedSyllabusSetup: stored.hasCompletedSyllabusSetup === true && hasVerifiedEmail,
+      hasCompletedScheduleSetup: stored.hasCompletedScheduleSetup === true && hasVerifiedEmail,
+      routine: stored.routine,
     };
   },
 

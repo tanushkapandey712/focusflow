@@ -181,10 +181,8 @@ export const SyllabusUnitAccordion = ({
 
       <div
         aria-hidden={!isExpanded}
-        className={cn(
-          "grid transition-[grid-template-rows,opacity] duration-300 ease-out",
-          isExpanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0",
-        )}
+        className="accordion-body"
+        data-open={isExpanded ? "true" : "false"}
       >
         <div id={bodyId} className="overflow-hidden">
             <div className="border-t border-slate-200/80 px-5 py-4 dark:border-white/10 sm:px-6">

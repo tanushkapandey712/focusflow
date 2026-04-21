@@ -62,7 +62,7 @@ export const TimerDisplay = ({
       </p>
 
       {/* Circular progress ring */}
-      <div className="relative mx-auto mt-6 flex items-center justify-center" style={{ width: RING_SIZE, height: RING_SIZE }}>
+      <div className={cn("relative mx-auto mt-6 flex items-center justify-center", isRunning && "timer-glow")} style={{ width: RING_SIZE, height: RING_SIZE }}>
         {/* Background ring */}
         <svg
           className="absolute inset-0"
@@ -112,13 +112,13 @@ export const TimerDisplay = ({
           </defs>
         </svg>
 
-        {/* Glow effect when running */}
+        {/* Glow + pulsing ring effect when running */}
         {isRunning ? (
-          <div className="absolute inset-0 animate-pulse rounded-full opacity-30">
+          <div className="absolute inset-0 timer-ring-pulse rounded-full">
             <div
               className={cn(
                 "h-full w-full rounded-full blur-xl",
-                accent === "teal" ? "bg-cyan-400/40" : "bg-blue-400/40",
+                accent === "teal" ? "bg-cyan-400/30" : "bg-blue-400/30",
               )}
             />
           </div>

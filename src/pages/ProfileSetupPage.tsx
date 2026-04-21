@@ -1,8 +1,8 @@
-import { useMemo, useState } from "react";
-import { ArrowRight, BookOpenText, Clock3, GraduationCap, Sparkles } from "lucide-react";
+import { useState } from "react";
+import { ArrowRight, BookOpenText, GraduationCap, Sparkles } from "lucide-react";
 import { Navigate, Link, useNavigate } from "react-router-dom";
 import { Button, Card, GradientCard } from "../components/ui";
-import { SubjectBadge } from "../components/subjects/SubjectBadge";
+import { ProfileAvatarSelector } from "../components/profile/ProfileAvatarSelector";
 import { useFocusFlowData } from "../hooks/useFocusFlowData";
 import type { InstitutionType } from "../types/models";
 import {
@@ -11,7 +11,6 @@ import {
   getSavedInstitutionType,
   isProfileSetupComplete,
 } from "../utils/profile";
-import { buildSubjectsFromNames, parseSubjectNames, subjectNamesToText } from "../utils/subjects";
 
 const institutionOptions: Array<{ value: InstitutionType; label: string; icon: typeof GraduationCap }> = [
   { value: "school", label: "School Student", icon: BookOpenText },
@@ -20,21 +19,15 @@ const institutionOptions: Array<{ value: InstitutionType; label: string; icon: t
 
 export const ProfileSetupPage = () => {
   const navigate = useNavigate();
-  const { profile, subjects, setProfile, setSubjects } = useFocusFlowData();
+  const { profile, setProfile } = useFocusFlowData();
 
   const [name, setName] = useState(profile.name === "Student" ? "" : profile.name);
+  const [avatarUrl, setAvatarUrl] = useState(profile.avatarUrl ?? "");
   const [institutionType, setInstitutionType] = useState<InstitutionType>(getSavedInstitutionType(profile));
   const [classOrCourse, setClassOrCourse] = useState(profile.classOrCourse ?? "");
-  const [subjectsText, setSubjectsText] = useState(subjectNamesToText(subjects));
   const [startTime, setStartTime] = useState(profile.institutionStartTime ?? "");
   const [endTime, setEndTime] = useState(profile.institutionEndTime ?? "");
   const [error, setError] = useState("");
-
-  const parsedSubjectNames = useMemo(() => parseSubjectNames(subjectsText), [subjectsText]);
-  const previewSubjects = useMemo(
-    () => buildSubjectsFromNames(parsedSubjectNames, subjects),
-    [parsedSubjectNames, subjects],
-  );
 
   if (!profile.isAuthenticated) {
     return <Navigate to="/sign-in" replace />;
@@ -62,11 +55,6 @@ export const ProfileSetupPage = () => {
       return;
     }
 
-    if (previewSubjects.length === 0) {
-      setError("Add at least one subject so the study pages have something to track.");
-      return;
-    }
-
     if (!startTime || !endTime) {
       setError(`Enter your ${institutionLabel.toLowerCase()} start and end times.`);
       return;
@@ -77,10 +65,10 @@ export const ProfileSetupPage = () => {
       return;
     }
 
-    setSubjects(previewSubjects);
     setProfile({
       ...profile,
       name: trimmedName,
+      avatarUrl,
       institutionType,
       classOrCourse: trimmedClassOrCourse,
       institutionStartTime: startTime,
@@ -88,7 +76,7 @@ export const ProfileSetupPage = () => {
       hasCompletedProfileSetup: true,
     });
 
-    navigate("/dashboard");
+    navigate("/syllabus-setup");
   };
 
   return (
@@ -141,6 +129,10 @@ export const ProfileSetupPage = () => {
           <Card className="space-y-6 p-6 sm:p-7 dark:bg-slate-800/90">
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="grid gap-4 sm:grid-cols-2">
+                <div className="sm:col-span-2">
+                  <ProfileAvatarSelector value={avatarUrl} onChange={setAvatarUrl} />
+                </div>
+
                 <label className="space-y-1.5 sm:col-span-2">
                   <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Name</span>
                   <input
@@ -222,37 +214,6 @@ export const ProfileSetupPage = () => {
                     className="field-surface"
                   />
                 </label>
-              </div>
-
-              <label className="space-y-1.5">
-                <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Subjects</span>
-                <textarea
-                  value={subjectsText}
-                  onChange={(event) => {
-                    setSubjectsText(event.target.value);
-                    setError("");
-                  }}
-                  rows={5}
-                  placeholder={"Mathematics\nPhysics\nEnglish"}
-                  className="field-surface min-h-36 resize-y"
-                />
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Add one subject per line or separate them with commas.
-                </p>
-              </label>
-
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-200">
-                  <Clock3 size={16} />
-                  Subject preview
-                </div>
-                <div className="flex min-h-16 flex-wrap gap-2 rounded-3xl border border-dashed border-slate-200 bg-slate-50/80 p-3 dark:border-white/10 dark:bg-slate-900/60">
-                  {previewSubjects.length ? (
-                    previewSubjects.map((subject) => <SubjectBadge key={subject.id} subject={subject} />)
-                  ) : (
-                    <p className="text-sm text-slate-500 dark:text-slate-400">Your chosen subjects will appear here.</p>
-                  )}
-                </div>
               </div>
 
               {error ? (

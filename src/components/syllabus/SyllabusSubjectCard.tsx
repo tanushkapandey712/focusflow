@@ -131,10 +131,8 @@ export const SyllabusSubjectCard = ({
 
       {/* Collapsible body */}
       <div
-        className={cn(
-          "grid transition-[grid-template-rows,opacity] duration-300 ease-out",
-          isSubjectExpanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0",
-        )}
+        className="accordion-body"
+        data-open={isSubjectExpanded ? "true" : "false"}
       >
         <div className="overflow-hidden">
           <div className="border-t border-slate-200/80 px-5 py-4 dark:border-white/10 sm:px-6">

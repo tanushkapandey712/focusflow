@@ -155,7 +155,7 @@ export const PersistentTimerWidget = () => {
   /* ── Collapsed pill ────────────────────────────────────────────── */
   if (!isMiniTimerVisible) {
     return (
-      <div className="pointer-events-none fixed bottom-24 right-4 z-40 lg:bottom-6">
+      <div className="pointer-events-none fixed bottom-24 right-4 z-40 lg:bottom-6 widget-enter">
         <button
           type="button"
           onClick={() => setIsMiniTimerVisible(true)}
@@ -172,10 +172,10 @@ export const PersistentTimerWidget = () => {
 
   /* ── Expanded widget ───────────────────────────────────────────── */
   return (
-    <div className="pointer-events-none fixed bottom-24 right-4 z-40 w-[min(22rem,calc(100vw-2rem))] lg:bottom-6">
+    <div className="pointer-events-none fixed bottom-24 right-4 z-40 w-[min(22rem,calc(100vw-2rem))] lg:bottom-6 widget-enter">
       <div
         className={cn(
-          "pointer-events-auto group overflow-hidden rounded-[1.7rem] border p-4 shadow-[0_28px_70px_-38px_rgba(37,99,235,0.45)] backdrop-blur-xl transition-all duration-300",
+          "pointer-events-auto group overflow-hidden rounded-[1.7rem] border p-4 shadow-[0_28px_70px_-38px_rgba(37,99,235,0.45)] backdrop-blur-xl transition-all duration-300 timer-glow",
           status === "running"
             ? "border-blue-300/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(239,246,255,0.88))] dark:border-blue-400/20 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.96),rgba(15,23,42,0.88))]"
             : "border-blue-200/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.94),rgba(239,246,255,0.82))] dark:border-blue-400/12 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.94),rgba(15,23,42,0.84))]",
@@ -197,7 +197,7 @@ export const PersistentTimerWidget = () => {
           <div className="relative shrink-0">
             <MiniProgressRing progress={timerProgress} status={status} />
             {status === "running" ? (
-              <div className="absolute inset-0 animate-ping rounded-full bg-blue-400/20" style={{ animationDuration: "2s" }} />
+              <div className="absolute inset-0 timer-ring-pulse rounded-full bg-blue-400/20" />
             ) : null}
           </div>
 

@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { Award } from "lucide-react";
 import { DashboardContainer } from "../components/dashboard/DashboardContainer";
-import { Card, GradientCard, SectionContainer } from "../components/ui";
+import { GradientCard, SectionContainer } from "../components/ui";
 import { useFocusFlowData } from "../hooks/useFocusFlowData";
 import {
   countAchievedMilestones,

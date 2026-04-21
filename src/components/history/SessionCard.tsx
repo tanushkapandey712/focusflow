@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { StudySession, Subject } from "../../types/models";
 import type { ResolvedSubject } from "../../utils/subjects";
 import { getSubjectVisuals } from "../../utils/subjects";
+import { getStabilityLabel, getStabilityTone } from "../../utils/stabilityScore";
 import { SessionTopicLinkEditor } from "./SessionTopicLinkEditor";
 import { SubjectBadge } from "../subjects/SubjectBadge";
 import { Button, Card } from "../ui";
@@ -61,9 +62,16 @@ export const SessionCard = ({
             {new Date(session.endedAt).toLocaleDateString()}
           </p>
         </div>
-        <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] ${status.className}`}>
-          {status.label}
-        </span>
+        <div className="flex flex-col items-end gap-2">
+          <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] ${status.className}`}>
+            {status.label}
+          </span>
+          {session.stabilityScore !== undefined ? (
+            <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] ${getStabilityTone(session.stabilityScore)}`}>
+              {getStabilityLabel(session.stabilityScore)} ({session.stabilityScore})
+            </span>
+          ) : null}
+        </div>
       </div>
 
       <div className="mt-4 grid grid-cols-3 gap-3 text-center">

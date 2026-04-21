@@ -10,6 +10,9 @@ import { TIMER_PRESETS } from "../features/timer/types";
 import { useStudyTimerSession } from "../features/timer/useStudyTimerSession";
 import { useFocusFlowData } from "../hooks/useFocusFlowData";
 import { useFocusTracking } from "../hooks/useFocusTracking";
+import { useTabDistraction } from "../hooks/useTabDistraction";
+import { SessionNudge } from "../components/session/SessionNudge";
+import { computeStabilityScore } from "../utils/stabilityScore";
 import {
   applySessionToSubjectTopic,
   getSessionSyllabusLink,
@@ -44,8 +47,13 @@ export const TimerPage = () => {
     reset,
     end,
     resetSessionForm,
+    totalSec,
   } = useStudyTimerSession();
   const cameraTracking = useFocusTracking();
+
+  const isSessionActive = status === "running" || status === "paused";
+  const tabDistraction = useTabDistraction(isSessionActive);
+  const elapsedSeconds = Math.max(0, totalSec - remainingSec);
 
   useEffect(() => {
     if (subjects.length === 0) {
@@ -123,6 +131,18 @@ export const TimerPage = () => {
     ];
     const allDistractionTags = Array.from(new Set([...distractionTags, ...autoDistractionTags]));
 
+    const tabDistractionSummary = tabDistraction.finalize();
+
+    const stabilityScore = computeStabilityScore({
+      actualMinutes: result.actualMinutes,
+      distractionCount: distractionTags.length + (focusTrackingSummary?.distractionEvents ?? 0),
+      tabSwitchCount: tabDistractionSummary.tabSwitchCount,
+      inactivityCount: tabDistractionSummary.inactivityCount,
+      tabAwayMs: tabDistractionSummary.tabAwayMs,
+      inactivityMs: tabDistractionSummary.inactivityMs,
+      cameraAwayEvents: focusTrackingSummary?.totalAwayEvents ?? 0,
+    });
+
     addSession({
       id: crypto.randomUUID(),
       subjectId: selectedSubject.id,
@@ -133,6 +153,11 @@ export const TimerPage = () => {
       actualMinutes: result.actualMinutes,
       distractionCount: distractionTags.length + (focusTrackingSummary?.distractionEvents ?? 0),
       distractionTags: allDistractionTags,
+      tabSwitchCount: tabDistractionSummary.tabSwitchCount,
+      tabAwayMs: tabDistractionSummary.tabAwayMs,
+      inactivityCount: tabDistractionSummary.inactivityCount,
+      inactivityMs: tabDistractionSummary.inactivityMs,
+      stabilityScore,
       goal: goal.trim() || undefined,
       syllabusTopic,
       focusTracking: focusTrackingSummary ?? undefined,
@@ -159,6 +184,13 @@ export const TimerPage = () => {
         title="Study Timer"
         description="A clean focus timer with optional on-device camera cues, smooth controls, and no extra clutter."
       >
+        <SessionNudge
+          isSessionActive={isSessionActive}
+          isInactive={tabDistraction.isInactive}
+          isTabAway={tabDistraction.isTabAway}
+          status={status}
+          elapsedSeconds={elapsedSeconds}
+        />
         <TimerCard
           subjects={subjects}
           selectedSubject={selectedSubject}

@@ -15,10 +15,20 @@ export const getInstitutionLabel = (institutionType: InstitutionType) =>
 export const isProfileSetupComplete = (profile: Pick<UserProfile, "hasCompletedProfileSetup">) =>
   profile.hasCompletedProfileSetup === true;
 
+export const isSyllabusSetupComplete = (profile: Pick<UserProfile, "hasCompletedSyllabusSetup">) =>
+  profile.hasCompletedSyllabusSetup === true;
+
+export const isScheduleSetupComplete = (profile: Pick<UserProfile, "hasCompletedScheduleSetup">) =>
+  profile.hasCompletedScheduleSetup === true;
+
 export const getNextAppRoute = (profile: UserProfile) => {
   if (!profile.isAuthenticated) {
     return "/sign-in";
   }
 
-  return isProfileSetupComplete(profile) ? "/dashboard" : "/profile-setup";
+  if (!isProfileSetupComplete(profile)) return "/profile-setup";
+  if (!isSyllabusSetupComplete(profile)) return "/syllabus-setup";
+  if (!isScheduleSetupComplete(profile)) return "/schedule-setup";
+  
+  return "/dashboard";
 };

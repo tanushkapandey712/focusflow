@@ -34,12 +34,34 @@ export interface UserProfile {
   preferredMode: "pomodoro" | "deep-work" | "custom";
   isAuthenticated: boolean;
   hasCompletedProfileSetup: boolean;
+  hasCompletedSyllabusSetup: boolean;
+  avatarUrl?: string;
   email?: string;
   emailVerifiedAt?: string;
   institutionType?: InstitutionType;
   classOrCourse?: string;
   institutionStartTime?: string;
   institutionEndTime?: string;
+  hasCompletedScheduleSetup: boolean;
+  routine?: RoutinePreferences;
+}
+
+export interface RoutinePreferences {
+  wakeUpTime: string;
+  sleepTime: string;
+  commuteDurationMinutes: number;
+  preferredStudyTime: "morning" | "night" | "flexible";
+}
+
+export interface TimetableSession {
+  id: string;
+  subjectId?: string;
+  topicId?: string;
+  dayOfWeek: number; // 0 (Sun) - 6 (Sat)
+  startTime: string; // "HH:mm"
+  endTime: string; // "HH:mm"
+  type: "study" | "break" | "college" | "custom";
+  label?: string;
 }
 
 export interface StudyGoal {

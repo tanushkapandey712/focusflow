@@ -95,18 +95,52 @@
   }
 }
 
-/* Staggered entrance animations */
+/* ── Staggered entrance animations ──────────────────────────────── */
 .animate-stagger-1 { animation: fade-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.06s both; }
 .animate-stagger-2 { animation: fade-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.12s both; }
 .animate-stagger-3 { animation: fade-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.18s both; }
 .animate-stagger-4 { animation: fade-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.24s both; }
 .animate-stagger-5 { animation: fade-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.30s both; }
+.animate-stagger-6 { animation: fade-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.36s both; }
+.animate-stagger-7 { animation: fade-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.42s both; }
+.animate-stagger-8 { animation: fade-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.48s both; }
 
 @keyframes fade-up {
   0% { opacity: 0; transform: translateY(16px); }
   100% { opacity: 1; transform: translateY(0); }
 }
 
+/* ── Timer glow animation ───────────────────────────────────────── */
+.timer-glow {
+  animation: timer-glow-pulse 2.5s ease-in-out infinite;
+}
+
+@keyframes timer-glow-pulse {
+  0%, 100% {
+    filter: drop-shadow(0 0 12px rgba(59, 130, 246, 0.25));
+  }
+  50% {
+    filter: drop-shadow(0 0 24px rgba(59, 130, 246, 0.45));
+  }
+}
+
+/* ── Pulsing ring for active timer ──────────────────────────────── */
+.timer-ring-pulse {
+  animation: ring-breathe 2s ease-in-out infinite;
+}
+
+@keyframes ring-breathe {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.3;
+  }
+  50% {
+    transform: scale(1.04);
+    opacity: 0.15;
+  }
+}
+
+/* ── Soft surface pseudo-element ────────────────────────────────── */
 .soft-surface::before {
   content: "";
   position: absolute;
@@ -128,8 +162,50 @@
   z-index: 1;
 }
 
+/* ── Widget enter/leave transitions ─────────────────────────────── */
+.widget-enter {
+  animation: widget-slide-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes widget-slide-in {
+  0% {
+    opacity: 0;
+    transform: translateY(12px) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ── Accordion grid collapse fix ────────────────────────────────── */
+.accordion-body {
+  display: grid;
+  transition: grid-template-rows 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+              opacity 0.3s ease-out;
+}
+
+.accordion-body[data-open="true"] {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+.accordion-body[data-open="false"] {
+  grid-template-rows: 0fr;
+  opacity: 0;
+}
+
+.accordion-body > * {
+  overflow: hidden;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .hover-lift {
     transform: none !important;
+  }
+  .timer-glow,
+  .timer-ring-pulse,
+  .widget-enter {
+    animation: none !important;
   }
 }

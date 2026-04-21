@@ -2,11 +2,12 @@ import { GradientCard } from "../ui/GradientCard";
 
 interface GreetingSectionProps {
   userName: string;
+  avatarUrl?: string;
   message?: string;
   streak?: number;
 }
 
-export const GreetingSection = ({ userName, message, streak }: GreetingSectionProps) => {
+export const GreetingSection = ({ userName, avatarUrl, message, streak }: GreetingSectionProps) => {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 
@@ -24,13 +25,22 @@ export const GreetingSection = ({ userName, message, streak }: GreetingSectionPr
               </div>
             )}
           </div>
-          <div className="space-y-3">
-            <h1 className="text-balance text-3xl font-semibold tracking-tight text-slate-900 dark:text-slate-100 sm:text-hero">
-              {greeting}, {userName}
-            </h1>
-            <p className="max-w-xl text-base leading-7 text-slate-600 dark:text-slate-300">
-              {message ?? "Stay consistent. Start one focused block and let the rest follow."}
-            </p>
+          <div className="flex items-center gap-4">
+            {avatarUrl && (
+              <img
+                src={avatarUrl}
+                alt={userName}
+                className="h-16 w-16 shrink-0 rounded-full border-2 border-white/60 bg-white/50 object-cover shadow-soft dark:border-white/10 dark:bg-slate-800"
+              />
+            )}
+            <div className="space-y-3">
+              <h1 className="text-balance text-3xl font-semibold tracking-tight text-slate-900 dark:text-slate-100 sm:text-hero">
+                {greeting}, {userName}
+              </h1>
+              <p className="max-w-xl text-base leading-7 text-slate-600 dark:text-slate-300">
+                {message ?? "Stay consistent. Start one focused block and let the rest follow."}
+              </p>
+            </div>
           </div>
         </div>
 
