@@ -21,10 +21,10 @@ const SummaryTile = ({ icon, label, value, supporting, tone = "default" }: Summa
   >
     <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
       {icon}
-      {label}
+      <span className="truncate">{label}</span>
     </div>
-    <p className="mt-3 text-base font-semibold text-slate-900 dark:text-slate-100">{value}</p>
-    <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">{supporting}</p>
+    <p className="mt-3 text-base font-semibold text-slate-900 dark:text-slate-100 line-clamp-3" title={value}>{value}</p>
+    <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300 line-clamp-3" title={supporting}>{supporting}</p>
   </div>
 );
 
@@ -57,7 +57,7 @@ export const TimerSummaryPanel = ({
   subjectTotalTopics,
   nextTopicTitle,
 }: TimerSummaryPanelProps) => (
-  <div className="grid gap-4 md:grid-cols-3">
+  <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-3">
     <SummaryTile
       icon={<Clock3 size={14} className="text-blue-600 dark:text-blue-300" />}
       label="Block Status"
