@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from "react";
 import { Camera, CameraOff } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { DashboardContainer } from "../components/dashboard/DashboardContainer";
 import { FocusStatusBadge } from "../components/focus/FocusStatusBadge";
 import { Button, GradientCard, SectionContainer } from "../components/ui";
@@ -16,6 +17,7 @@ import {
 } from "../utils/syllabusProgress";
 
 export const TimerPage = () => {
+  const navigate = useNavigate();
   const { subjects, addSession, updateSubject } = useFocusFlowData();
   const {
     mode,
@@ -196,19 +198,20 @@ export const TimerPage = () => {
             cameraTracking.resetSessionTracking();
             reset();
           }}
+          onOpenSyllabusMap={() => navigate("/syllabus")}
         />
       </SectionContainer>
 
-      <GradientCard tone="mint" className="animate-fade-up mx-auto max-w-3xl p-6">
-        <h3 className="text-lg font-semibold tracking-tight text-slate-900 dark:text-slate-100">Built to stay calm under focus.</h3>
+      <GradientCard tone="lavender" className="animate-fade-up mx-auto max-w-3xl p-6">
+        <h3 className="text-lg font-semibold tracking-tight text-slate-900 dark:text-slate-100">Supportive cues, never visual noise.</h3>
         <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-          The timer stays simple: choose the subject, define the goal, and let the rest of the block feel lighter.
+          The timer stays primary. Focus tracking sits underneath as a quieter layer you can use only when it helps.
         </p>
 
-        <div className="mt-5 flex flex-col gap-3 rounded-[1.4rem] bg-white/72 p-4 shadow-soft dark:bg-slate-900/60">
+        <div className="mt-5 flex flex-col gap-3 rounded-[1.55rem] border border-blue-100/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.84),rgba(239,246,255,0.7))] p-4 shadow-[0_22px_50px_-34px_rgba(37,99,235,0.25)] dark:border-blue-400/10 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.78),rgba(15,23,42,0.62))]">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-blue-700/80 dark:text-blue-100/70">
                 Focus Tracking
               </p>
               <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
@@ -223,7 +226,11 @@ export const TimerPage = () => {
 
           <div className="flex flex-wrap items-center gap-2">
             {!cameraTracking.isCameraActive ? (
-              <Button variant="secondary" onClick={() => void cameraTracking.startCamera()} className="rounded-full px-5">
+              <Button
+                variant="secondary"
+                onClick={() => void cameraTracking.startCamera()}
+                className="rounded-full border-blue-200/80 bg-white/88 px-5 text-blue-700 shadow-[0_18px_40px_-30px_rgba(37,99,235,0.35)] hover:bg-white dark:border-blue-400/10 dark:bg-slate-900/82 dark:text-blue-100"
+              >
                 <Camera size={15} />
                 Enable tracking
               </Button>
@@ -233,7 +240,11 @@ export const TimerPage = () => {
                 Waiting for access
               </Button>
             ) : (
-              <Button variant="secondary" onClick={cameraTracking.stopCamera} className="rounded-full px-5">
+              <Button
+                variant="secondary"
+                onClick={cameraTracking.stopCamera}
+                className="rounded-full border-blue-200/80 bg-white/88 px-5 text-slate-700 shadow-[0_18px_40px_-30px_rgba(37,99,235,0.18)] hover:bg-white dark:border-blue-400/10 dark:bg-slate-900/82 dark:text-slate-100"
+              >
                 <CameraOff size={15} />
                 Disable tracking
               </Button>

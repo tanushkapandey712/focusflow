@@ -1,6 +1,7 @@
 import type { PropsWithChildren } from "react";
 import { useEffect } from "react";
 import { Outlet } from "react-router-dom";
+import { PersistentTimerWidget } from "../../features/timer/PersistentTimerWidget";
 import { MobileNav } from "./MobileNav";
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
@@ -31,6 +32,7 @@ export const AppLayout = ({ children }: PropsWithChildren) => {
           <main className="flex-1 px-4 pb-28 pt-5 sm:px-6 lg:px-8 lg:pb-10 lg:pt-6">{children ?? <Outlet />}</main>
         </div>
       </div>
+      <PersistentTimerWidget />
       <MobileNav />
     </div>
   );
