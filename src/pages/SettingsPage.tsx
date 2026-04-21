@@ -3,8 +3,7 @@ import { DashboardContainer } from "../components/dashboard/DashboardContainer";
 import { SubjectBadge } from "../components/subjects/SubjectBadge";
 import { Button, Card, SectionContainer } from "../components/ui";
 import { useFocusFlowData } from "../hooks/useFocusFlowData";
-import type { InstitutionType, StudyGoal, UserProfile } from "../types/models";
-} from "../types/models";
+import type { InstitutionType, UserProfile } from "../types/models";
 import {
   getClassOrCourseLabel,
   getInstitutionLabel,
@@ -24,7 +23,7 @@ const institutionTypeOptions: Array<{ value: InstitutionType; label: string }> =
 ];
 
 export const SettingsPage = () => {
-  const { profile, goals, sessions, subjects, setGoals, setProfile, setSubjects } = useFocusFlowData();
+  const { profile, subjects, setProfile, setSubjects } = useFocusFlowData();
   const initialSubjectsText = useMemo(() => subjectNamesToText(subjects), [subjects]);
   const [name, setName] = useState(profile.name);
   const [institutionType, setInstitutionType] = useState<InstitutionType>(getSavedInstitutionType(profile));
