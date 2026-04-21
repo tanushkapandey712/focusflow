@@ -20,7 +20,7 @@ export const TimerPresetSelector = ({
 }: TimerPresetSelectorProps) => (
   <div className="space-y-4">
     {/* Segmented control */}
-    <div className="inline-flex rounded-[1.25rem] border border-white/80 bg-white/60 p-1.5 shadow-[0_8px_24px_-12px_rgba(15,23,42,0.12)] backdrop-blur dark:border-white/10 dark:bg-slate-950/50">
+    <div className="grid grid-cols-1 gap-1.5 rounded-[1.25rem] border border-white/80 bg-white/60 p-1.5 shadow-[0_8px_24px_-12px_rgba(15,23,42,0.12)] backdrop-blur sm:grid-cols-3 dark:border-white/10 dark:bg-slate-950/50">
       {presets.map((preset) => {
         const isActive = preset.mode === mode;
 
@@ -31,7 +31,7 @@ export const TimerPresetSelector = ({
             onClick={() => onModeChange(preset.mode)}
             disabled={disabled}
             className={cn(
-              "relative rounded-[0.95rem] px-5 py-2.5 text-sm font-semibold transition-all duration-300 disabled:pointer-events-none disabled:opacity-50",
+              "relative min-w-0 rounded-[0.95rem] px-4 py-2.5 text-sm font-semibold transition-all duration-300 disabled:pointer-events-none disabled:opacity-50",
               isActive
                 ? "bg-blue-600 text-white shadow-[0_8px_20px_-8px_rgba(37,99,235,0.6)]"
                 : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100",
@@ -53,7 +53,7 @@ export const TimerPresetSelector = ({
 
     {/* Custom duration input */}
     {mode === "custom" ? (
-      <div className="max-w-xs animate-fade-up">
+      <div className="w-full max-w-xs animate-fade-up">
         <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
           Custom Duration (minutes)
         </label>

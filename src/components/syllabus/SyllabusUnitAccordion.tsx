@@ -8,6 +8,7 @@ import {
   getUnitCompletionPercent,
 } from "../../utils/syllabus";
 import { SyllabusTopicRow } from "./SyllabusTopicRow";
+import { ConfirmDeleteModal } from "./ConfirmDeleteModal";
 import { cn } from "../../lib/cn";
 
 const DEFAULT_VISIBLE_TOPICS = 8;
@@ -42,6 +43,7 @@ export const SyllabusUnitAccordion = ({
   onToggleTopic,
 }: SyllabusUnitAccordionProps) => {
   const [isEditingUnit, setIsEditingUnit] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [unitDraft, setUnitDraft] = useState(unit.title);
   const [newTopicTitle, setNewTopicTitle] = useState("");
 
@@ -145,13 +147,7 @@ export const SyllabusUnitAccordion = ({
               variant="secondary"
               onClick={(event) => {
                 event.stopPropagation();
-                if (
-                  window.confirm(
-                    `Delete "${unit.title}" and all of its topics from ${subjectName}?`,
-                  )
-                ) {
-                  onDeleteUnit();
-                }
+                setIsDeleteModalOpen(true);
               }}
               className="h-8 w-8 rounded-full p-0 text-rose-600 dark:text-rose-300"
               aria-label={`Delete ${unit.title}`}
@@ -285,6 +281,18 @@ export const SyllabusUnitAccordion = ({
             </div>
         </div>
       </div>
+
+      <ConfirmDeleteModal
+        isOpen={isDeleteModalOpen}
+        title="Delete unit?"
+        body={`Are you sure you want to delete "${unit.title}" and all topics inside it from ${subjectName}?`}
+        confirmLabel="Delete unit"
+        onCancel={() => setIsDeleteModalOpen(false)}
+        onConfirm={() => {
+          setIsDeleteModalOpen(false);
+          onDeleteUnit();
+        }}
+      />
     </Card>
   );
 };

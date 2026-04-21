@@ -51,7 +51,7 @@ export const TimerDisplay = ({
   return (
     <div
       className={cn(
-        "rounded-[1.8rem] border px-5 py-8 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.65),0_22px_65px_-44px_rgba(37,99,235,0.45)] transition-all duration-500 sm:px-8 sm:py-10",
+        "rounded-[1.8rem] border px-4 py-6 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.65),0_22px_65px_-44px_rgba(37,99,235,0.45)] transition-all duration-500 sm:px-8 sm:py-10",
         isRunning
           ? "border-blue-300/60 bg-[radial-gradient(circle_at_top,rgba(37,99,235,0.22),rgba(255,255,255,0.96)_58%)] dark:border-blue-400/20 dark:bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.3),rgba(15,23,42,0.96)_60%)]"
           : "border-blue-200/70 bg-[radial-gradient(circle_at_top,rgba(37,99,235,0.18),rgba(255,255,255,0.96)_58%)] dark:border-blue-400/10 dark:bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.24),rgba(15,23,42,0.96)_60%)]",
@@ -62,12 +62,15 @@ export const TimerDisplay = ({
       </p>
 
       {/* Circular progress ring */}
-      <div className={cn("relative mx-auto mt-6 flex items-center justify-center", isRunning && "timer-glow")} style={{ width: RING_SIZE, height: RING_SIZE }}>
+      <div
+        className={cn(
+          "relative mx-auto mt-6 aspect-square w-full max-w-[min(17.5rem,calc(100vw-8rem))] min-w-0 flex items-center justify-center sm:max-w-[17.5rem]",
+          isRunning && "timer-glow",
+        )}
+      >
         {/* Background ring */}
         <svg
-          className="absolute inset-0"
-          width={RING_SIZE}
-          height={RING_SIZE}
+          className="absolute inset-0 h-full w-full"
           viewBox={`0 0 ${RING_SIZE} ${RING_SIZE}`}
         >
           <circle
@@ -128,7 +131,7 @@ export const TimerDisplay = ({
         <div
           className={cn(
             "relative z-10 font-semibold tracking-[-0.06em] tabular-nums drop-shadow-[0_16px_40px_rgba(37,99,235,0.18)]",
-            isActive ? "text-6xl sm:text-7xl" : "text-5xl sm:text-6xl",
+            isActive ? "text-4xl sm:text-7xl" : "text-4xl sm:text-6xl",
             accent === "teal"
               ? "text-slate-950 dark:text-cyan-50"
               : "text-slate-950 dark:text-blue-50",
@@ -149,12 +152,12 @@ export const TimerDisplay = ({
       </div>
 
       {/* Controls */}
-      <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
+      <div className="mt-7 flex flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-center">
         {isIdle ? (
           <Button
             onClick={onStart}
             disabled={!isReady}
-            className="h-14 rounded-[1.5rem] px-8 text-base shadow-[0_24px_55px_-28px_rgba(37,99,235,0.75)]"
+            className="h-12 w-full rounded-[1.35rem] px-6 text-base shadow-[0_24px_55px_-28px_rgba(37,99,235,0.75)] sm:h-14 sm:w-auto sm:rounded-[1.5rem] sm:px-8"
           >
             <Play size={18} />
             Start Session
@@ -165,7 +168,7 @@ export const TimerDisplay = ({
           <Button
             variant="secondary"
             onClick={onPause}
-            className="h-14 rounded-[1.5rem] px-6 text-base"
+            className="h-12 w-full rounded-[1.35rem] px-6 text-base sm:h-14 sm:w-auto sm:rounded-[1.5rem]"
           >
             <Pause size={18} />
             Pause
@@ -175,7 +178,7 @@ export const TimerDisplay = ({
         {isPaused ? (
           <Button
             onClick={onResume}
-            className="h-14 rounded-[1.5rem] px-8 text-base shadow-[0_24px_55px_-28px_rgba(37,99,235,0.75)]"
+            className="h-12 w-full rounded-[1.35rem] px-6 text-base shadow-[0_24px_55px_-28px_rgba(37,99,235,0.75)] sm:h-14 sm:w-auto sm:rounded-[1.5rem] sm:px-8"
           >
             <Play size={18} />
             Resume
@@ -187,7 +190,7 @@ export const TimerDisplay = ({
             <Button
               variant="secondary"
               onClick={onReset}
-              className="h-14 rounded-[1.5rem] px-6 text-base"
+              className="h-12 w-full rounded-[1.35rem] px-6 text-base sm:h-14 sm:w-auto sm:rounded-[1.5rem]"
             >
               <RotateCcw size={18} />
               Reset
@@ -195,7 +198,7 @@ export const TimerDisplay = ({
             <Button
               variant="secondary"
               onClick={onEnd}
-              className="h-14 rounded-[1.5rem] px-6 text-base"
+              className="h-12 w-full rounded-[1.35rem] px-6 text-base sm:h-14 sm:w-auto sm:rounded-[1.5rem]"
             >
               <Square size={18} />
               End Session

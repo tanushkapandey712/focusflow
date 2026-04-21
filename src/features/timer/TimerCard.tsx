@@ -226,23 +226,25 @@ export const TimerCard = ({
 
         {/* Session context breadcrumb */}
         <div className="mt-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded-full bg-blue-100 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-blue-700 dark:bg-blue-500/15 dark:text-blue-200">
+          <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+            <span className="max-w-full rounded-full bg-blue-100 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-blue-700 dark:bg-blue-500/15 dark:text-blue-200">
               {selectedSubject?.name ?? "No subject selected"}
             </span>
             <span className="hidden text-slate-300 sm:inline">/</span>
-            <span className="text-sm font-medium text-slate-600 dark:text-slate-300">
+            <span className="max-w-full truncate text-sm font-medium text-slate-600 dark:text-slate-300">
               {selectedUnit?.title ?? "No unit linked"}
             </span>
             <span className="hidden text-slate-300 sm:inline">/</span>
-            <span className="text-sm font-medium text-slate-600 dark:text-slate-300">
+            <span className="max-w-full truncate text-sm font-medium text-slate-600 dark:text-slate-300">
               {selectedTopic?.title ?? "No topic linked"}
             </span>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+          <div className="flex min-w-0 flex-wrap items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
             <span className="surface-pill px-3 py-2">{plannedMinutes} min block</span>
-            <span className="surface-pill px-3 py-2">{normalizedGoal || "Goal still needed"}</span>
+            <span className="surface-pill max-w-full truncate px-3 py-2 sm:max-w-[18rem]">
+              {normalizedGoal || "Goal still needed"}
+            </span>
           </div>
         </div>
       </div>
