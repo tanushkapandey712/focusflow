@@ -25,16 +25,16 @@ export const TimerSectionCard = ({ activeMinutes }: TimerSectionCardProps) => {
 
       <div className="flex h-full flex-col justify-between gap-5">
         {/* Header */}
-        <div className="flex items-start justify-between gap-4">
-          <div>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="min-w-0">
             <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/65">
               {isRunning ? "Active Session" : "Study Timer"}
             </p>
-            <p className="mt-2 text-6xl font-extrabold leading-none tracking-[-0.05em] text-white tabular-nums">
+            <p className="mt-2 text-5xl sm:text-6xl font-extrabold leading-none tracking-[-0.05em] text-white tabular-nums">
               {isRunning ? timerText : `${activeMinutes}:00`}
             </p>
           </div>
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/20">
+          <div className="flex shrink-0 h-11 w-11 items-center justify-center rounded-2xl bg-white/20">
             <Clock3 size={18} className="text-white" />
           </div>
         </div>

@@ -128,28 +128,26 @@ export const SyllabusUnitAccordion = ({
 
           <div className="relative z-20 flex shrink-0 items-start gap-2 pointer-events-auto">
             <Button
-              variant="secondary"
+              variant="ghost"
+              size="icon"
               onClick={(event) => {
                 event.stopPropagation();
                 setUnitDraft(unit.title);
                 setIsEditingUnit(true);
-                if (!isExpanded) {
-                  handleToggle();
-                }
+                if (!isExpanded) handleToggle();
               }}
-              className="h-8 w-8 rounded-full p-0"
               aria-label={`Edit ${unit.title}`}
               title={`Edit ${unit.title}`}
             >
               <PencilLine size={14} />
             </Button>
             <Button
-              variant="secondary"
+              variant="danger-ghost"
+              size="icon"
               onClick={(event) => {
                 event.stopPropagation();
                 setIsDeleteModalOpen(true);
               }}
-              className="h-8 w-8 rounded-full p-0 text-rose-600 dark:text-rose-300"
               aria-label={`Delete ${unit.title}`}
               title={`Delete ${unit.title}`}
             >
@@ -200,19 +198,21 @@ export const SyllabusUnitAccordion = ({
                     <div className="flex gap-2">
                       <Button
                         variant="secondary"
+                        size="sm"
                         onClick={saveUnitTitle}
-                        className="h-10 rounded-full px-3 text-xs"
+                        className="rounded-full px-3"
                       >
                         <Check size={14} />
                         Save
                       </Button>
                       <Button
-                        variant="secondary"
+                        variant="ghost"
+                        size="sm"
                         onClick={() => {
                           setUnitDraft(unit.title);
                           setIsEditingUnit(false);
                         }}
-                        className="h-10 rounded-full px-3 text-xs"
+                        className="rounded-full px-3"
                       >
                         <X size={14} />
                         Cancel

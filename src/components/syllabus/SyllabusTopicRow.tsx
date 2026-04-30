@@ -85,19 +85,21 @@ export const SyllabusTopicRow = ({
               <div className="flex flex-wrap gap-2">
                 <Button
                   variant="secondary"
+                  size="sm"
                   onClick={saveTitle}
-                  className="h-8 rounded-full px-3 text-xs"
+                  className="rounded-full px-3"
                 >
                   <Check size={13} />
                   Save
                 </Button>
                 <Button
-                  variant="secondary"
+                  variant="ghost"
+                  size="sm"
                   onClick={() => {
                     setDraftTitle(topic.title);
                     setIsEditing(false);
                   }}
-                  className="h-8 rounded-full px-3 text-xs"
+                  className="rounded-full px-3"
                 >
                   <X size={13} />
                   Cancel
@@ -133,16 +135,17 @@ export const SyllabusTopicRow = ({
                   {getTopicProgressLabel(topic)}
                 </span>
                 <Button
-                  variant="secondary"
+                  variant="ghost"
+                  size="icon"
                   onClick={() => setIsEditing(true)}
-                  className="h-8 w-8 rounded-full p-0"
                   aria-label={`Edit ${topic.title}`}
                   title={`Edit ${topic.title}`}
                 >
                   <PencilLine size={14} />
                 </Button>
                 <Button
-                  variant="secondary"
+                  variant="danger-ghost"
+                  size="icon"
                   onClick={() => {
                     if (
                       window.confirm(
@@ -152,7 +155,6 @@ export const SyllabusTopicRow = ({
                       onDelete();
                     }
                   }}
-                  className="h-8 w-8 rounded-full p-0 text-rose-600 dark:text-rose-300"
                   aria-label={`Delete ${topic.title}`}
                   title={`Delete ${topic.title}`}
                 >

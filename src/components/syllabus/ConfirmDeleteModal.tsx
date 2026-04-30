@@ -84,13 +84,10 @@ export const ConfirmDeleteModal = ({
         </div>
 
         <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-          <Button variant="secondary" onClick={onCancel} className="sm:min-w-28">
+          <Button variant="ghost" onClick={onCancel} className="sm:min-w-28">
             Cancel
           </Button>
-          <Button
-            onClick={onConfirm}
-            className="sm:min-w-32 border-rose-500/40 bg-[linear-gradient(135deg,#ef4444,#dc2626)] text-white shadow-[0_22px_50px_-28px_rgba(239,68,68,0.7)] hover:brightness-105 dark:border-rose-400/20 dark:bg-[linear-gradient(135deg,#ef4444,#be123c)]"
-          >
+          <Button variant="danger" onClick={onConfirm} className="sm:min-w-32">
             {confirmLabel}
           </Button>
         </div>

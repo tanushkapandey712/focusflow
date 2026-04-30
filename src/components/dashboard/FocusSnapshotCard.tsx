@@ -50,8 +50,8 @@ export const FocusSnapshotCard = ({
     <Card tone="white" className="overflow-hidden p-5 sm:p-6">
       <div className="space-y-4">
         {/* Header */}
-        <div className="flex items-start justify-between gap-4">
-          <div>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="min-w-0">
             <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-400">
               Focus Snapshot
             </p>
@@ -59,7 +59,7 @@ export const FocusSnapshotCard = ({
               Live attention at a glance
             </h3>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <div className={cn("flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-bold", cfg.bg, cfg.text)}>
               <span className={cn("h-2 w-2 rounded-full", cfg.dot)} />
               {isCameraActive ? attentionStatus : "Camera Off"}

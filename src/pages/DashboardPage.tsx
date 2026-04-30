@@ -81,7 +81,12 @@ export const DashboardPage = () => {
   return (
     <DashboardContainer>
       <div className="animate-stagger-1">
-        <GreetingSection userName={profile.name} avatarUrl={profile.avatarUrl} message="Ready for a calm, focused study day?" streak={currentStreak} />
+        <GreetingSection
+          userName={profile.name}
+          avatarUrl={profile.avatarUrl}
+          streak={currentStreak}
+          todayMinutes={summary.todayMinutes}
+        />
       </div>
 
       <div className="animate-stagger-2">
