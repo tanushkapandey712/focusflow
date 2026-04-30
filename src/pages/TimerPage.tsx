@@ -48,6 +48,8 @@ export const TimerPage = () => {
     end,
     resetSessionForm,
     totalSec,
+    manualDistractionCount,
+    logManualDistraction,
   } = useStudyTimerSession();
   const cameraTracking = useFocusTracking();
 
@@ -135,7 +137,7 @@ export const TimerPage = () => {
 
     const stabilityScore = computeStabilityScore({
       actualMinutes: result.actualMinutes,
-      distractionCount: distractionTags.length + (focusTrackingSummary?.distractionEvents ?? 0),
+      distractionCount: distractionTags.length + (focusTrackingSummary?.distractionEvents ?? 0) + manualDistractionCount,
       tabSwitchCount: tabDistractionSummary.tabSwitchCount,
       inactivityCount: tabDistractionSummary.inactivityCount,
       tabAwayMs: tabDistractionSummary.tabAwayMs,
@@ -151,7 +153,7 @@ export const TimerPage = () => {
       endedAt: endedAtIso,
       plannedMinutes: result.plannedMinutes,
       actualMinutes: result.actualMinutes,
-      distractionCount: distractionTags.length + (focusTrackingSummary?.distractionEvents ?? 0),
+      distractionCount: distractionTags.length + (focusTrackingSummary?.distractionEvents ?? 0) + manualDistractionCount,
       distractionTags: allDistractionTags,
       tabSwitchCount: tabDistractionSummary.tabSwitchCount,
       tabAwayMs: tabDistractionSummary.tabAwayMs,
@@ -220,6 +222,7 @@ export const TimerPage = () => {
           onStart={() => {
             if (!selectedSubject) return;
             setDistractionTags([]);
+            // resetManualDistraction is handled inside resetSessionForm which gets called on End
             cameraTracking.beginSessionTracking();
             start();
           }}
@@ -228,26 +231,21 @@ export const TimerPage = () => {
           onEnd={handleEndSession}
           onReset={() => {
             cameraTracking.resetSessionTracking();
+            resetSessionForm(); // reset form & manual distraction
             reset();
           }}
           onOpenSyllabusMap={() => navigate("/syllabus")}
+          manualDistractionCount={manualDistractionCount}
+          onLogManualDistraction={logManualDistraction}
         />
       </SectionContainer>
 
-      <GradientCard tone="lavender" className="animate-fade-up mx-auto max-w-3xl p-6">
-        <h3 className="text-lg font-semibold tracking-tight text-slate-900 dark:text-slate-100">Supportive cues, never visual noise.</h3>
-        <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-          The timer stays primary. Focus tracking sits underneath as a quieter layer you can use only when it helps.
-        </p>
-
-        <div className="mt-5 flex flex-col gap-3 rounded-[1.55rem] border border-blue-100/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.84),rgba(239,246,255,0.7))] p-4 shadow-[0_22px_50px_-34px_rgba(37,99,235,0.25)] dark:border-blue-400/10 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.78),rgba(15,23,42,0.62))]">
+      <div className="animate-fade-up mx-auto max-w-3xl pt-4">
+        <div className="flex flex-col gap-3 rounded-[1.55rem] border border-blue-100/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.84),rgba(239,246,255,0.7))] p-4 shadow-[0_22px_50px_-34px_rgba(37,99,235,0.25)] dark:border-blue-400/10 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.78),rgba(15,23,42,0.62))]">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-blue-700/80 dark:text-blue-100/70">
-                Focus Tracking
-              </p>
-              <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                Camera tracking stays hidden and local. Turn it on only when you want live focus signals.
+                AI Focus Tracking
               </p>
             </div>
             <FocusStatusBadge
@@ -287,7 +285,7 @@ export const TimerPage = () => {
             ) : null}
           </div>
         </div>
-      </GradientCard>
+      </div>
     </DashboardContainer>
   );
 };

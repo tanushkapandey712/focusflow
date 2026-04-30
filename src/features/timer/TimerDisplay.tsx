@@ -18,6 +18,8 @@ interface TimerDisplayProps {
   onResume: () => void;
   onEnd: () => void;
   onReset: () => void;
+  manualDistractionCount: number;
+  onLogManualDistraction: () => void;
 }
 
 const RING_SIZE = 280;
@@ -40,6 +42,8 @@ export const TimerDisplay = ({
   onResume,
   onEnd,
   onReset,
+  manualDistractionCount,
+  onLogManualDistraction,
 }: TimerDisplayProps) => {
   const dashOffset = RING_CIRCUMFERENCE - (RING_CIRCUMFERENCE * Math.max(0, Math.min(progress, 100))) / 100;
   const isRunning = status === "running";
@@ -203,6 +207,15 @@ export const TimerDisplay = ({
               <Square size={18} />
               End Session
             </Button>
+            {isRunning && (
+              <Button
+                variant="ghost"
+                onClick={onLogManualDistraction}
+                className="h-12 w-full rounded-[1.35rem] px-6 text-base text-amber-600 hover:bg-amber-50 hover:text-amber-700 dark:text-amber-500 dark:hover:bg-amber-950/30 sm:h-14 sm:w-auto sm:rounded-[1.5rem]"
+              >
+                Log Distraction {manualDistractionCount > 0 ? `(${manualDistractionCount})` : ""}
+              </Button>
+            )}
           </>
         ) : null}
       </div>

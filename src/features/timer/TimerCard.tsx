@@ -45,7 +45,9 @@ interface TimerCardProps {
   onResume: () => void;
   onEnd: () => void;
   onReset: () => void;
-  onOpenSyllabusMap?: () => void;
+  onOpenSyllabusMap: () => void;
+  manualDistractionCount: number;
+  onLogManualDistraction: () => void;
 }
 
 const getStatusCopy = (status: TimerStatus, isReady: boolean) => {
@@ -157,6 +159,8 @@ export const TimerCard = ({
   onEnd,
   onReset,
   onOpenSyllabusMap,
+  manualDistractionCount,
+  onLogManualDistraction,
 }: TimerCardProps) => {
   const activePreset = presets.find((preset) => preset.mode === mode) ?? presets[0];
   const plannedMinutes = mode === "custom" ? customMinutes : activePreset.minutes;
@@ -283,6 +287,8 @@ export const TimerCard = ({
               onResume={onResume}
               onEnd={onEnd}
               onReset={onReset}
+              manualDistractionCount={manualDistractionCount}
+              onLogManualDistraction={onLogManualDistraction}
             />
           </div>
 

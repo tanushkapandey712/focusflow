@@ -22,10 +22,12 @@ export const StudyTimerProvider = ({ children }: PropsWithChildren) => {
   const [selectedTopicId, setSelectedTopicId] = useState(persistedForm.selectedTopicId);
   const [goal, setGoal] = useState(persistedForm.goal);
   const [distractionTags, setDistractionTags] = useState<string[]>(persistedForm.distractionTags);
+  const [manualDistractionCount, setManualDistractionCount] = useState(0);
 
   const resetSessionForm = useCallback(() => {
     setGoal("");
     setDistractionTags([]);
+    setManualDistractionCount(0);
   }, []);
 
   useEffect(() => {
@@ -59,6 +61,8 @@ export const StudyTimerProvider = ({ children }: PropsWithChildren) => {
       setGoal,
       distractionTags,
       setDistractionTags,
+      manualDistractionCount,
+      logManualDistraction: () => setManualDistractionCount((prev) => prev + 1),
       start: timer.start,
       pause: timer.pause,
       resume: timer.resume,
@@ -68,6 +72,7 @@ export const StudyTimerProvider = ({ children }: PropsWithChildren) => {
     }),
     [
       distractionTags,
+      manualDistractionCount,
       goal,
       selectedSubjectId,
       selectedTopicId,

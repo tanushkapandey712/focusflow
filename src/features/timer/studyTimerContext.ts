@@ -21,6 +21,8 @@ export interface StudyTimerSessionValue {
   setGoal: (goal: string) => void;
   distractionTags: string[];
   setDistractionTags: (next: string[]) => void;
+  manualDistractionCount: number;
+  logManualDistraction: () => void;
   start: () => void;
   pause: () => void;
   resume: () => void;

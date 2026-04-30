@@ -79,6 +79,8 @@ export interface UseCameraFocusTrackingResult {
     endedAt?: Date;
   }) => FocusTrackingSessionSummary | null;
   resetSessionTracking: () => void;
+  deskMode: boolean;
+  setDeskMode: (deskMode: boolean) => void;
 }
 
 const createEmptyMetrics = (): RollingFocusMetrics => ({
@@ -254,6 +256,7 @@ export const useCameraFocusTracking = ({
     createEmptySessionAnalytics,
   );
   const [metrics, setMetrics] = useState<RollingFocusMetrics>(createEmptyMetrics);
+  const [deskMode, setDeskMode] = useState(false);
 
   const totalAwayEvents = metrics.totalAwayEvents;
   const currentSessionAwayTime = metrics.currentSessionAwayTimeMs;
@@ -600,16 +603,17 @@ export const useCameraFocusTracking = ({
           }
         }
 
-        const headPose = estimateHeadPose(landmarks, DEFAULT_HEAD_POSE_SETTINGS);
+        const headPoseSettings = { ...DEFAULT_HEAD_POSE_SETTINGS, deskMode };
+        const headPose = estimateHeadPose(landmarks, headPoseSettings);
         const smoothedYaw = smoothPoseValue(
           headSmoothedYawRef.current,
           headPose.yaw,
-          DEFAULT_HEAD_POSE_SETTINGS.smoothingAlpha,
+          headPoseSettings.smoothingAlpha,
         );
         const smoothedPitch = smoothPoseValue(
           headSmoothedPitchRef.current,
           headPose.pitch,
-          DEFAULT_HEAD_POSE_SETTINGS.smoothingAlpha,
+          headPoseSettings.smoothingAlpha,
         );
 
         headSmoothedYawRef.current = smoothedYaw;
@@ -617,7 +621,7 @@ export const useCameraFocusTracking = ({
         nextHeadDirection = classifyHeadDirection(
           smoothedYaw,
           smoothedPitch,
-          DEFAULT_HEAD_POSE_SETTINGS,
+          headPoseSettings,
         );
 
         if (nextHeadDirection === "away") {
@@ -761,6 +765,7 @@ export const useCameraFocusTracking = ({
     finalizeAwayWindow,
     finalizeLookingAwayWindow,
     syncMetricsState,
+    deskMode,
   ]);
 
   const getNextSampleDelay = useCallback(() => {
@@ -991,6 +996,8 @@ export const useCameraFocusTracking = ({
       beginSessionTracking,
       finishSessionTracking,
       resetSessionTracking,
+      deskMode,
+      setDeskMode,
     }),
     [
       beginSessionTracking,
@@ -1021,6 +1028,7 @@ export const useCameraFocusTracking = ({
       startCamera,
       stopCamera,
       totalAwayEvents,
+      deskMode,
     ],
   );
 };

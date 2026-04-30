@@ -2,7 +2,16 @@ import type { NormalizedLandmark } from "@mediapipe/tasks-vision";
 
 export type HeadDirectionState = "centered" | "slightly-away" | "away" | "unavailable";
 
-export const DEFAULT_HEAD_POSE_SETTINGS = {
+export interface HeadPoseSettings {
+  slightlyAwayThreshold: number;
+  awayThreshold: number;
+  pitchWeight: number;
+  smoothingAlpha: number;
+  lookingAwayThresholdMs: number;
+  deskMode: boolean;
+}
+
+export const DEFAULT_HEAD_POSE_SETTINGS: HeadPoseSettings = {
   // These thresholds operate on a nose-offset value normalized by eye distance.
   // That keeps the rule more stable across different face sizes in the frame.
   slightlyAwayThreshold: 0.16,
@@ -14,7 +23,9 @@ export const DEFAULT_HEAD_POSE_SETTINGS = {
   smoothingAlpha: 0.35,
   // Brief turns should not immediately count as active looking away.
   lookingAwayThresholdMs: 1400,
-} as const;
+  // If true, downward pitch (looking at a desk/book) is heavily discounted.
+  deskMode: false,
+};
 
 export interface HeadPoseEstimate {
   yaw: number | null;
@@ -87,7 +98,9 @@ export const estimateHeadPose = (
 
   const yaw = (noseTip.x - eyeMidX) / eyeDistance;
   const pitch = (noseTip.y - faceCenterY) / eyeDistance;
-  const severity = Math.max(Math.abs(yaw), Math.abs(pitch) * settings.pitchWeight);
+  // If deskMode is true and pitch is positive (looking down), we heavily discount the pitch severity.
+  const effectivePitch = settings.deskMode && pitch > 0 ? pitch * 0.1 : pitch;
+  const severity = Math.max(Math.abs(yaw), Math.abs(effectivePitch) * settings.pitchWeight);
 
   return {
     yaw,
@@ -127,9 +140,11 @@ export const classifyHeadDirection = (
     return "unavailable";
   }
 
+  // If deskMode is true and pitch is positive (looking down), we discount it.
+  const effectivePitch = settings.deskMode && smoothedPitch > 0 ? smoothedPitch * 0.1 : smoothedPitch;
   const severity = Math.max(
     Math.abs(smoothedYaw),
-    Math.abs(smoothedPitch) * settings.pitchWeight,
+    Math.abs(effectivePitch) * settings.pitchWeight,
   );
 
   if (severity >= settings.awayThreshold) {
