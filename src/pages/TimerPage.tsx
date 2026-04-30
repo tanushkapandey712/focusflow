@@ -3,7 +3,7 @@ import { Camera, CameraOff } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { DashboardContainer } from "../components/dashboard/DashboardContainer";
 import { FocusStatusBadge } from "../components/focus/FocusStatusBadge";
-import { Button, GradientCard, SectionContainer } from "../components/ui";
+import { Button, SectionContainer } from "../components/ui";
 import { formatTimer } from "../features/timer/format";
 import { TimerCard } from "../features/timer/TimerCard";
 import { TIMER_PRESETS } from "../features/timer/types";
