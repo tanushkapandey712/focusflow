@@ -19,13 +19,13 @@ export const Button = ({
     className={cn(
       "inline-flex h-11 items-center justify-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-semibold tracking-[0.01em] shadow-soft transition duration-300 ease-out active:scale-[0.99] disabled:pointer-events-none disabled:opacity-55 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-100/70 dark:focus-visible:ring-brand-900/40 motion-safe:hover:-translate-y-0.5",
       variant === "primary" &&
-        "border border-white/10 bg-gradient-to-r from-slate-950 via-slate-900 to-brand-700 text-white shadow-[0_18px_40px_-24px_rgba(37,99,235,0.65)] hover:brightness-105 dark:border-brand-300/15 dark:from-brand-700 dark:via-brand-600 dark:to-sky-500 dark:text-white dark:shadow-[0_18px_40px_-24px_rgba(99,102,241,0.85)]",
+        "bg-card-coral text-white shadow-soft hover:shadow-glow-coral hover:brightness-105",
       variant === "secondary" &&
-        "border border-white/80 bg-white/82 text-slate-700 backdrop-blur hover:bg-white dark:border-white/10 dark:bg-slate-900/82 dark:text-slate-100 dark:hover:bg-slate-900",
+        "border border-cream-200 bg-cream text-navy hover:bg-coral hover:text-white hover:border-coral dark:border-white/10 dark:bg-surface-800 dark:text-slate-100 dark:hover:bg-coral dark:hover:border-coral",
       variant === "danger" &&
-        "border border-rose-200/80 bg-gradient-to-r from-rose-600 to-rose-500 text-white shadow-[0_18px_40px_-24px_rgba(225,29,72,0.55)] hover:brightness-110 dark:border-rose-400/20 dark:from-rose-700 dark:to-rose-500 dark:shadow-[0_18px_40px_-24px_rgba(225,29,72,0.7)]",
+        "bg-coral text-white shadow-soft hover:brightness-110",
       variant === "ghost" &&
-        "border-none bg-transparent text-slate-600 shadow-none hover:bg-slate-100/80 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800/60 dark:hover:text-slate-100",
+        "border-none bg-transparent text-slate-500 shadow-none hover:bg-cream hover:text-navy dark:text-slate-400 dark:hover:bg-surface-800 dark:hover:text-slate-100",
       loading && "pointer-events-none",
       className,
     )}

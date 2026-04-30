@@ -4,15 +4,15 @@ import { cn } from "../../lib/cn";
 import { useFocusFlowData } from "../../hooks/useFocusFlowData";
 
 const navItems = [
-  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/timer", label: "Study Timer", icon: Clock3 },
-  { to: "/syllabus", label: "Syllabus Map", icon: BookOpenText },
-  { to: "/goals", label: "Goals", icon: Target },
-  { to: "/planner", label: "Study Planner", icon: CalendarDays },
-  { to: "/analytics", label: "Analytics", icon: BarChart3 },
-  { to: "/milestones", label: "Milestones", icon: Award },
-  { to: "/history", label: "Session History", icon: ListChecks },
-  { to: "/settings", label: "Settings", icon: Settings2 },
+  { to: "/dashboard", label: "Dashboard",      icon: LayoutDashboard },
+  { to: "/timer",     label: "Study Timer",    icon: Clock3 },
+  { to: "/syllabus",  label: "Syllabus Map",   icon: BookOpenText },
+  { to: "/goals",     label: "Goals",          icon: Target },
+  { to: "/planner",   label: "Study Planner",  icon: CalendarDays },
+  { to: "/analytics", label: "Analytics",      icon: BarChart3 },
+  { to: "/milestones",label: "Milestones",     icon: Award },
+  { to: "/history",   label: "Session History",icon: ListChecks },
+  { to: "/settings",  label: "Settings",       icon: Settings2 },
 ];
 
 export const Sidebar = () => {
@@ -25,69 +25,76 @@ export const Sidebar = () => {
     .toUpperCase();
 
   return (
-    <aside className="hidden w-[19rem] px-4 py-5 lg:block">
-      <div className="soft-surface animate-fade-up flex h-full flex-col p-5">
-        <div className="mb-8 flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-slate-950 via-brand-700 to-sky-400 text-white shadow-soft">
-            <Sparkles size={18} />
+    <aside className="hidden w-[18.5rem] px-4 py-5 lg:block">
+      <div className="soft-surface animate-fade-up flex h-full flex-col p-4">
+        {/* Logo */}
+        <div className="mb-7 flex items-center gap-3 px-1">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-card-coral shadow-soft">
+            <Sparkles size={18} className="text-white" />
           </div>
           <div>
-            <p className="text-lg font-semibold tracking-tight text-slate-900 dark:text-slate-100">FocusFlow</p>
-            <p className="text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Calm workspace</p>
+            <p className="text-base font-extrabold tracking-tight text-navy dark:text-slate-100">FocusFlow</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Study workspace</p>
           </div>
         </div>
 
-        <div className="mb-3 px-1">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
-            Workspace
-          </p>
+        {/* Section label */}
+        <div className="mb-2 px-2">
+          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-400">Navigation</p>
         </div>
 
-        <nav className="space-y-2">
+        {/* Nav items */}
+        <nav className="space-y-1">
           {navItems.map(({ to, label, icon: Icon }) => (
             <NavLink
               key={to}
               to={to}
               className={({ isActive }) =>
                 cn(
-                  "group flex items-center gap-3 rounded-[1.4rem] px-3.5 py-3 text-sm font-medium text-slate-600 transition duration-300 hover:bg-white/76 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800/90 dark:hover:text-white",
+                  "group flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-semibold text-slate-500 transition duration-200",
+                  "hover:bg-cream hover:text-navy dark:hover:bg-surface-800 dark:hover:text-white",
                   isActive &&
-                    "bg-white/92 text-slate-900 shadow-soft ring-1 ring-white/60 dark:bg-brand-500/15 dark:text-white dark:ring-brand-300/15",
+                    "bg-coral text-white shadow-soft hover:bg-coral hover:text-white dark:bg-coral dark:text-white",
                 )
               }
             >
-              <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-white/72 text-slate-700 shadow-soft transition group-hover:bg-white dark:bg-slate-950/55 dark:text-slate-200">
-                <Icon size={16} />
-              </div>
-              <span className="tracking-tight">{label}</span>
+              {({ isActive }) => (
+                <>
+                  <div className={cn(
+                    "flex h-8 w-8 items-center justify-center rounded-xl transition",
+                    isActive
+                      ? "bg-white/20 text-white"
+                      : "bg-cream text-slate-500 group-hover:bg-white dark:bg-surface-800 dark:text-slate-400",
+                  )}>
+                    <Icon size={15} />
+                  </div>
+                  <span className="tracking-[-0.01em]">{label}</span>
+                </>
+              )}
             </NavLink>
           ))}
         </nav>
 
-        {/* User avatar card */}
-        <div className="mt-auto">
+        {/* User card */}
+        <div className="mt-auto pt-4">
           <NavLink
             to="/settings"
-            className="group flex items-center gap-3 rounded-[1.55rem] border border-white/80 bg-white/68 p-4 shadow-soft transition duration-300 hover:border-brand-200/70 hover:bg-white/90 dark:border-white/10 dark:bg-slate-900/72 dark:hover:border-brand-400/20 dark:hover:bg-slate-800/90"
+            className="group flex items-center gap-3 rounded-2xl border border-cream-200 bg-cream p-3.5 transition duration-200 hover:border-coral/30 hover:bg-coral/5 dark:border-white/10 dark:bg-surface-800 dark:hover:border-coral/30"
           >
             {profile.avatarUrl ? (
               <img
                 src={profile.avatarUrl}
                 alt={profile.name}
-                className="h-10 w-10 rounded-full object-cover ring-2 ring-white/80 dark:ring-slate-700/80"
+                className="h-10 w-10 rounded-full object-cover ring-2 ring-white shadow-soft"
               />
             ) : (
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-brand-500 to-sky-400 text-sm font-bold text-white shadow-soft">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-card-coral text-sm font-extrabold text-white shadow-soft">
                 {initials}
               </div>
             )}
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
-                {profile.name}
-              </p>
-              <p className="truncate text-xs text-slate-500 dark:text-slate-400">
-                {profile.email ?? "View profile"}
-              </p>
+              <p className="truncate text-sm font-bold text-navy dark:text-slate-100">{profile.name}</p>
+              <p className="truncate text-xs text-slate-400">{profile.email ?? "View profile"}</p>
             </div>
           </NavLink>
         </div>

@@ -22,11 +22,11 @@ export const StatsSection = ({
   syllabusDetail,
 }: StatsSectionProps) => {
   const stats = [
-    { label: "Today", value: todayMinutes, trend: todayTrend },
-    { label: "Sessions", value: totalSessions },
-    { label: "Focus", value: focusScore },
-    { label: "Top Subject", value: topSubjectTime, detail: topSubjectDetail },
-    { label: "Syllabus", value: syllabusCompletion, detail: syllabusDetail },
+    { label: "Today", value: todayMinutes, trend: todayTrend, tone: "teal" as const },
+    { label: "Sessions", value: totalSessions, tone: "lavender" as const },
+    { label: "Focus Score", value: focusScore, tone: "coral" as const },
+    { label: "Top Subject", value: topSubjectTime, detail: topSubjectDetail, tone: "peach" as const },
+    { label: "Syllabus", value: syllabusCompletion, detail: syllabusDetail, tone: "white" as const },
   ];
 
   return (
@@ -38,6 +38,7 @@ export const StatsSection = ({
           value={item.value}
           trend={item.trend}
           detail={item.detail}
+          tone={item.tone}
           compact
         />
       ))}

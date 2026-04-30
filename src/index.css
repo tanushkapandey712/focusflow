@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Nunito:wght@400;600;700;800;900&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -6,9 +6,9 @@
 
 @layer base {
   :root {
-    font-family: "Plus Jakarta Sans", Inter, system-ui, -apple-system, Segoe UI, sans-serif;
-    color: #0f172a;
-    background-color: #f7f8ff;
+    font-family: "Plus Jakarta Sans", "Nunito", Inter, system-ui, -apple-system, sans-serif;
+    color: #1C1E2C;
+    background-color: #F5F0E4;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -19,26 +19,24 @@
     margin: 0;
     min-width: 320px;
     min-height: 100vh;
+    background-color: #F5F0E4;
     background-image:
-      radial-gradient(circle at top left, rgba(99, 102, 241, 0.08), transparent 26rem),
-      radial-gradient(circle at top right, rgba(56, 189, 248, 0.08), transparent 24rem),
-      linear-gradient(180deg, rgba(255, 255, 255, 0.7), rgba(247, 248, 255, 0));
-    @apply bg-surface-50 text-slate-900 dark:bg-surface-900 dark:text-slate-100;
+      radial-gradient(circle at 15% 15%, rgba(232, 82, 74, 0.07), transparent 30rem),
+      radial-gradient(circle at 85% 10%, rgba(27, 143, 124, 0.07), transparent 28rem),
+      radial-gradient(circle at 50% 90%, rgba(155, 140, 244, 0.06), transparent 26rem);
   }
 
   .dark body {
-    background-color: #0b1120;
+    background-color: #13141F;
     background-image:
-      radial-gradient(circle at top left, rgba(99, 102, 241, 0.2), transparent 24rem),
-      radial-gradient(circle at top right, rgba(34, 211, 238, 0.12), transparent 22rem),
-      linear-gradient(180deg, rgba(30, 41, 59, 0.42), rgba(11, 17, 32, 0));
+      radial-gradient(circle at 15% 15%, rgba(232, 82, 74, 0.12), transparent 28rem),
+      radial-gradient(circle at 85% 10%, rgba(27, 143, 124, 0.12), transparent 26rem),
+      radial-gradient(circle at 50% 90%, rgba(155, 140, 244, 0.10), transparent 24rem);
   }
 
-  h1,
-  h2,
-  h3,
-  h4 {
-    letter-spacing: -0.04em;
+  h1, h2, h3, h4 {
+    letter-spacing: -0.03em;
+    font-weight: 800;
   }
 
   #root {
@@ -46,56 +44,107 @@
   }
 
   ::selection {
-    background: rgba(79, 70, 229, 0.18);
+    background: rgba(155, 140, 244, 0.25);
     color: inherit;
   }
 }
 
 @layer components {
+  /* ── Base card surface ────────────────────────── */
   .soft-surface {
-    @apply relative isolate rounded-[1.9rem] border border-white/80 bg-white/75 shadow-panel backdrop-blur-2xl transition-[transform,box-shadow,border-color,background-color] duration-300 dark:border-white/10 dark:bg-surface-800/80 dark:shadow-neumorph-dark;
+    @apply relative isolate rounded-3xl border border-white/70 bg-white/90 shadow-card backdrop-blur-sm
+           transition-[transform,box-shadow,border-color] duration-300
+           dark:border-white/10 dark:bg-surface-800/90 dark:shadow-neumorph-dark;
   }
 
+  /* ── Colored card variants ────────────────────── */
+  .card-coral {
+    @apply relative isolate rounded-3xl bg-card-coral p-5 shadow-card overflow-hidden;
+    color: white;
+  }
+
+  .card-teal {
+    @apply relative isolate rounded-3xl bg-card-teal p-5 shadow-card overflow-hidden;
+    color: white;
+  }
+
+  .card-peach {
+    @apply relative isolate rounded-3xl bg-card-peach p-5 shadow-card overflow-hidden;
+    color: #1C1E2C;
+  }
+
+  .card-lavender {
+    @apply relative isolate rounded-3xl bg-card-lavender p-5 shadow-card overflow-hidden;
+    color: white;
+  }
+
+  .card-cream {
+    @apply relative isolate rounded-3xl bg-white p-5 shadow-card overflow-hidden border border-cream-200;
+    color: #1C1E2C;
+  }
+
+  .card-navy {
+    @apply relative isolate rounded-3xl bg-card-navy p-5 shadow-card overflow-hidden;
+    color: white;
+  }
+
+  /* ── Hover lift ───────────────────────────────── */
   .hover-lift {
-    @apply transition duration-300 ease-out motion-safe:hover:-translate-y-0.5 motion-safe:hover:border-white motion-safe:hover:shadow-panel;
+    @apply transition duration-300 ease-out;
+  }
+  .hover-lift:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 16px 40px -8px rgba(28,30,44,0.22);
   }
 
+  /* ── Field surface ────────────────────────────── */
   .field-surface {
-    @apply w-full appearance-none rounded-[1.35rem] border border-white/80 bg-white/85 px-4 py-3 text-sm text-slate-800 shadow-sm outline-none transition duration-200 placeholder:text-slate-400 focus:border-brand-500 focus:bg-white focus:ring-4 focus:ring-brand-100/70 dark:border-white/10 dark:bg-slate-950/60 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-brand-500 dark:focus:bg-slate-950/80;
+    @apply w-full appearance-none rounded-2xl border border-cream-200 bg-white px-4 py-3
+           text-sm text-navy outline-none transition duration-200
+           placeholder:text-slate-400
+           focus:border-lavender-500 focus:ring-4 focus:ring-lavender-100
+           dark:border-white/10 dark:bg-surface-800 dark:text-slate-100
+           dark:placeholder:text-slate-500 dark:focus:border-lavender-500;
   }
 
+  /* ── Surface pill ─────────────────────────────── */
   .surface-pill {
-    @apply rounded-full border border-white/80 bg-white/75 shadow-soft backdrop-blur transition-colors duration-300 dark:border-white/10 dark:bg-slate-900/80;
+    @apply inline-flex items-center rounded-full border border-white/70 bg-white/80 shadow-soft
+           transition-colors duration-200 dark:border-white/10 dark:bg-surface-800/80;
   }
 
-  .page-intro {
-    @apply space-y-2 px-1;
+  /* ── Page intro ───────────────────────────────── */
+  .page-intro   { @apply space-y-2 px-1; }
+  .page-eyebrow { @apply text-[11px] font-bold uppercase tracking-[0.22em] text-coral; }
+  .page-title   { @apply text-2xl font-extrabold tracking-tight text-navy dark:text-slate-100 sm:text-3xl; }
+  .page-copy    { @apply max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300 sm:text-base; }
+
+  /* ── Stat chip ─────────────────────────────────── */
+  .stat-chip {
+    @apply rounded-2xl bg-white/25 px-3 py-1 text-[11px] font-bold uppercase tracking-wide;
   }
 
-  .page-eyebrow {
-    @apply text-[11px] font-semibold uppercase tracking-[0.22em] text-brand-700 dark:text-brand-100;
+  /* ── Fun badge ─────────────────────────────────── */
+  .fun-badge {
+    @apply inline-flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1
+           text-xs font-bold shadow-soft dark:bg-surface-800/90;
   }
 
-  .page-title {
-    @apply text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100 sm:text-[2rem];
+  /* ── Progress bar ──────────────────────────────── */
+  .progress-bar-track {
+    @apply h-3 w-full overflow-hidden rounded-full bg-black/10;
   }
-
-  .page-copy {
-    @apply max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300 sm:text-[1.02rem];
+  .progress-bar-fill {
+    @apply h-full rounded-full transition-all duration-700;
   }
 }
 
 @layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
-
-  .tabular-nums {
-    font-variant-numeric: tabular-nums;
-  }
+  .text-balance   { text-wrap: balance; }
+  .tabular-nums   { font-variant-numeric: tabular-nums; }
 }
 
-/* ── Staggered entrance animations ──────────────────────────────── */
+/* ── Staggered entrance animations ──────────────── */
 .animate-stagger-1 { animation: fade-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.06s both; }
 .animate-stagger-2 { animation: fade-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.12s both; }
 .animate-stagger-3 { animation: fade-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.18s both; }
@@ -106,106 +155,94 @@
 .animate-stagger-8 { animation: fade-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.48s both; }
 
 @keyframes fade-up {
-  0% { opacity: 0; transform: translateY(16px); }
+  0%   { opacity: 0; transform: translateY(20px); }
   100% { opacity: 1; transform: translateY(0); }
 }
 
-/* ── Timer glow animation ───────────────────────────────────────── */
-.timer-glow {
-  animation: timer-glow-pulse 2.5s ease-in-out infinite;
-}
+/* ── Timer glow animation ─────────────────────── */
+.timer-glow { animation: timer-glow-pulse 2.5s ease-in-out infinite; }
 
 @keyframes timer-glow-pulse {
-  0%, 100% {
-    filter: drop-shadow(0 0 12px rgba(59, 130, 246, 0.25));
-  }
-  50% {
-    filter: drop-shadow(0 0 24px rgba(59, 130, 246, 0.45));
-  }
+  0%, 100% { filter: drop-shadow(0 0 12px rgba(27, 143, 124, 0.28)); }
+  50%       { filter: drop-shadow(0 0 28px rgba(27, 143, 124, 0.52)); }
 }
 
-/* ── Pulsing ring for active timer ──────────────────────────────── */
-.timer-ring-pulse {
-  animation: ring-breathe 2s ease-in-out infinite;
-}
+/* ── Pulsing ring ─────────────────────────────── */
+.timer-ring-pulse { animation: ring-breathe 2s ease-in-out infinite; }
 
 @keyframes ring-breathe {
-  0%, 100% {
-    transform: scale(1);
-    opacity: 0.3;
-  }
-  50% {
-    transform: scale(1.04);
-    opacity: 0.15;
-  }
+  0%, 100% { transform: scale(1);    opacity: 0.32; }
+  50%       { transform: scale(1.05); opacity: 0.14; }
 }
 
-/* ── Soft surface pseudo-element ────────────────────────────────── */
+/* ── Soft surface shimmer ─────────────────────── */
 .soft-surface::before {
   content: "";
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(circle at top left, rgba(255, 255, 255, 0.36), transparent 34%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.24), transparent 28%);
+    radial-gradient(circle at top left, rgba(255,255,255,0.42), transparent 38%),
+    linear-gradient(180deg, rgba(255,255,255,0.28), transparent 32%);
   pointer-events: none;
+  border-radius: inherit;
 }
 
 .dark .soft-surface::before {
   background:
-    radial-gradient(circle at top left, rgba(129, 140, 248, 0.14), transparent 34%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 28%);
+    radial-gradient(circle at top left, rgba(155,140,244,0.10), transparent 38%),
+    linear-gradient(180deg, rgba(255,255,255,0.03), transparent 32%);
 }
 
-.soft-surface > * {
-  position: relative;
-  z-index: 1;
-}
+.soft-surface > * { position: relative; z-index: 1; }
 
-/* ── Widget enter/leave transitions ─────────────────────────────── */
-.widget-enter {
-  animation: widget-slide-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
+/* ── Widget enter/leave ───────────────────────── */
+.widget-enter { animation: widget-slide-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both; }
 
 @keyframes widget-slide-in {
-  0% {
-    opacity: 0;
-    transform: translateY(12px) scale(0.96);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+  0%   { opacity: 0; transform: translateY(12px) scale(0.96); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-/* ── Accordion grid collapse fix ────────────────────────────────── */
+/* ── Accordion grid collapse ─────────────────── */
 .accordion-body {
   display: grid;
   transition: grid-template-rows 0.35s cubic-bezier(0.22, 1, 0.36, 1),
               opacity 0.3s ease-out;
 }
+.accordion-body[data-open="true"]  { grid-template-rows: 1fr; opacity: 1; }
+.accordion-body[data-open="false"] { grid-template-rows: 0fr; opacity: 0; }
+.accordion-body > * { overflow: hidden; }
 
-.accordion-body[data-open="true"] {
-  grid-template-rows: 1fr;
-  opacity: 1;
+/* ── Bar chart animation ──────────────────────── */
+.bar-grow { animation: bar-grow 0.6s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+@keyframes bar-grow {
+  0%   { transform: scaleY(0); transform-origin: bottom; }
+  100% { transform: scaleY(1); transform-origin: bottom; }
 }
 
-.accordion-body[data-open="false"] {
-  grid-template-rows: 0fr;
-  opacity: 0;
+/* ── Decorative blobs on colored cards ────────── */
+.card-coral::after,
+.card-teal::after,
+.card-peach::after,
+.card-lavender::after,
+.card-navy::after {
+  content: "";
+  position: absolute;
+  bottom: -2rem;
+  right: -2rem;
+  width: 9rem;
+  height: 9rem;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.10);
+  pointer-events: none;
 }
 
-.accordion-body > * {
-  overflow: hidden;
-}
+/* ── Dot indicator ───────────────────────────── */
+.dot-active   { @apply h-2.5 w-2.5 rounded-full bg-coral; }
+.dot-inactive { @apply h-2 w-2 rounded-full bg-slate-300; }
 
 @media (prefers-reduced-motion: reduce) {
-  .hover-lift {
-    transform: none !important;
-  }
-  .timer-glow,
-  .timer-ring-pulse,
-  .widget-enter {
-    animation: none !important;
-  }
+  .hover-lift:hover { transform: none; }
+  .timer-glow, .timer-ring-pulse, .widget-enter, .bar-grow { animation: none !important; }
 }

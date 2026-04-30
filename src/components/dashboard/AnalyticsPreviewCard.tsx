@@ -1,45 +1,78 @@
 import { Card } from "../ui";
+import { TrendingUp } from "lucide-react";
 
 interface AnalyticsPreviewCardProps {
   points: number[];
 }
+
+const DAY_LABELS = ["S", "M", "T", "W", "T", "F", "S"];
+
+// Pastel bar colors cycling through the playful palette
+const BAR_COLORS = [
+  "bg-coral",
+  "bg-lavender-500",
+  "bg-teal",
+  "bg-peach",
+  "bg-coral",
+  "bg-lavender-500",
+  "bg-teal",
+];
 
 export const AnalyticsPreviewCard = ({ points }: AnalyticsPreviewCardProps) => {
   const max = Math.max(...points, 1);
   const total = points.reduce((sum, point) => sum + point, 0);
   const average = Math.round(total / Math.max(1, points.length));
   const best = Math.max(...points, 0);
+  const todayIdx = new Date().getDay(); // 0=Sun
 
   return (
-    <Card className="animate-fade-up overflow-hidden p-6 sm:p-7">
-      <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
+    <Card tone="white" className="overflow-hidden p-6 sm:p-7">
+      <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
+        {/* Chart section */}
         <div className="space-y-5">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">Analytics</p>
-              <h3 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">Weekly Preview</h3>
-              <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                A quick read on your rhythm before you open the full analytics page.
+              <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-400">
+                Weekly Activity
               </p>
+              <h3 className="mt-1.5 text-2xl font-extrabold tracking-tight text-navy dark:text-slate-100">
+                Your Study Rhythm
+              </h3>
             </div>
-            <div className="surface-pill hidden px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 sm:inline-flex">
-              7-day trend
+            <div className="flex items-center gap-1.5 rounded-full bg-teal/10 px-3 py-1.5 text-xs font-bold text-teal">
+              <TrendingUp size={13} />
+              7-day
             </div>
           </div>
 
-          <div className="rounded-[1.75rem] bg-gradient-to-b from-white to-slate-50/90 p-4 shadow-soft ring-1 ring-white/70 dark:from-surface-900 dark:to-surface-800 dark:ring-white/5">
-            <div className="flex h-40 items-end gap-3">
-              {points.map((value, idx) => (
-                <div key={`${value}-${idx}`} className="flex flex-1 flex-col items-center justify-end gap-2">
-                  <div
-                    className="w-full rounded-full bg-gradient-to-t from-slate-950 via-brand-600 to-sky-300 transition-all duration-700"
-                    style={{ height: `${Math.max(20, (value / max) * 100)}%` }}
-                  />
-                  <span className="text-[10px] font-medium uppercase tracking-[0.16em] text-slate-400">
-                    {["S", "M", "T", "W", "T", "F", "S"][idx]}
-                  </span>
-                </div>
-              ))}
+          {/* Bar chart */}
+          <div className="rounded-3xl bg-cream p-5 dark:bg-surface-800/60">
+            <div className="flex h-36 items-end gap-2 sm:gap-3">
+              {points.map((value, idx) => {
+                const isToday = idx === todayIdx;
+                const heightPct = Math.max(8, (value / max) * 100);
+                return (
+                  <div key={`${value}-${idx}`} className="flex flex-1 flex-col items-center justify-end gap-2">
+                    <div
+                      className={`w-full rounded-full transition-all duration-700 bar-grow ${
+                        isToday
+                          ? "bg-coral shadow-glow-coral"
+                          : BAR_COLORS[idx % BAR_COLORS.length]
+                      } opacity-${isToday ? "100" : "70"}`}
+                      style={{
+                        height: `${heightPct}%`,
+                        animationDelay: `${idx * 0.07}s`,
+                        opacity: isToday ? 1 : 0.72,
+                      }}
+                    />
+                    <span className={`text-[10px] font-bold uppercase tracking-[0.1em] ${
+                      isToday ? "text-coral" : "text-slate-400"
+                    }`}>
+                      {DAY_LABELS[idx]}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
@@ -50,18 +83,26 @@ export const AnalyticsPreviewCard = ({ points }: AnalyticsPreviewCardProps) => {
           </p>
         </div>
 
+        {/* Summary stats */}
         <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
           {[
-            { label: "Total", value: `${total}m` },
-            { label: "Average", value: `${average}m` },
-            { label: "Best Day", value: `${best}m` },
+            { label: "Total", value: `${total}m`, color: "bg-coral/10 text-coral" },
+            { label: "Average", value: `${average}m`, color: "bg-teal/10 text-teal" },
+            { label: "Best Day", value: `${best}m`, color: "bg-lavender-500/10 text-lavender-600" },
           ].map((item) => (
             <div
               key={item.label}
-              className="rounded-[1.5rem] bg-slate-50/88 p-4 shadow-soft ring-1 ring-white/70 dark:bg-surface-900/70 dark:ring-white/5"
+              className="flex items-center justify-between rounded-2xl bg-cream p-4 dark:bg-surface-800/60"
             >
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">{item.label}</p>
-              <p className="mt-2 text-xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">{item.value}</p>
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">{item.label}</p>
+                <p className="mt-1 text-2xl font-extrabold tracking-tight text-navy dark:text-slate-100">
+                  {item.value}
+                </p>
+              </div>
+              <div className={`rounded-2xl px-3 py-1.5 text-xs font-bold ${item.color}`}>
+                {item.label === "Total" ? "📚" : item.label === "Average" ? "📈" : "🏆"}
+              </div>
             </div>
           ))}
         </div>

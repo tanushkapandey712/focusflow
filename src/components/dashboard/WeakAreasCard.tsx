@@ -4,28 +4,27 @@ import { Card } from "../ui";
 
 interface WeakAreasCardProps {
   weakAreas: WeakArea[];
-  /** Max items to display */
   limit?: number;
 }
 
 const typeIconMap = {
   unstudied_subject: EyeOff,
-  neglected_area: Clock3,
-  incomplete_unit: BookX,
-  low_time_topic: AlertTriangle,
+  neglected_area:    Clock3,
+  incomplete_unit:   BookX,
+  low_time_topic:    AlertTriangle,
 };
 
 const typeLabelMap = {
   unstudied_subject: "Unstudied",
-  neglected_area: "Neglected",
-  incomplete_unit: "Incomplete",
-  low_time_topic: "Low Time",
+  neglected_area:    "Neglected",
+  incomplete_unit:   "Incomplete",
+  low_time_topic:    "Low Time",
 };
 
-const severityTone = (severity: number) => {
-  if (severity >= 80) return "border-rose-200/80 bg-rose-50/60 dark:border-rose-500/15 dark:bg-rose-500/5";
-  if (severity >= 60) return "border-amber-200/80 bg-amber-50/60 dark:border-amber-500/15 dark:bg-amber-500/5";
-  return "border-slate-200/80 bg-slate-50/60 dark:border-white/10 dark:bg-slate-900/30";
+const severityColor = (severity: number): { bg: string; badge: string; icon: string } => {
+  if (severity >= 80) return { bg: "bg-coral/8 border border-coral/20",    badge: "bg-coral/15 text-coral",           icon: "bg-coral text-white" };
+  if (severity >= 60) return { bg: "bg-peach/15 border border-peach/30",   badge: "bg-peach/20 text-peach-600",       icon: "bg-peach text-navy" };
+  return               { bg: "bg-cream border border-cream-200",            badge: "bg-cream-200 text-slate-500",       icon: "bg-cream-200 text-slate-500" };
 };
 
 export const WeakAreasCard = ({ weakAreas, limit = 5 }: WeakAreasCardProps) => {
@@ -33,16 +32,12 @@ export const WeakAreasCard = ({ weakAreas, limit = 5 }: WeakAreasCardProps) => {
 
   if (displayAreas.length === 0) {
     return (
-      <Card className="animate-fade-up p-5 sm:p-6">
+      <Card tone="white" className="p-5 sm:p-6">
         <div className="space-y-2">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">
-            Weak Areas
-          </p>
-          <h3 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
-            No gaps detected
-          </h3>
-          <p className="text-sm leading-6 text-slate-600 dark:text-slate-300">
-            Your syllabus coverage looks balanced. Keep this up and check back after more sessions.
+          <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-400">Weak Areas</p>
+          <h3 className="text-2xl font-extrabold tracking-tight text-navy dark:text-slate-100">No gaps detected 🎉</h3>
+          <p className="text-sm leading-6 text-slate-500 dark:text-slate-400">
+            Your syllabus coverage looks balanced. Keep it up!
           </p>
         </div>
       </Card>
@@ -50,45 +45,41 @@ export const WeakAreasCard = ({ weakAreas, limit = 5 }: WeakAreasCardProps) => {
   }
 
   return (
-    <Card className="animate-fade-up overflow-hidden p-5 sm:p-6">
-      <div className="space-y-5">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-          <div className="max-w-2xl">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">
-              Weak Areas
-            </p>
-            <h3 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
-              {displayAreas.length} area{displayAreas.length === 1 ? "" : "s"} need attention
-            </h3>
-            <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-              Focus on high-severity items first to balance your study coverage.
-            </p>
-          </div>
+    <Card tone="white" className="overflow-hidden p-5 sm:p-6">
+      <div className="space-y-4">
+        <div>
+          <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-400">Weak Areas</p>
+          <h3 className="mt-1.5 text-2xl font-extrabold tracking-tight text-navy dark:text-slate-100">
+            {displayAreas.length} area{displayAreas.length === 1 ? "" : "s"} need attention
+          </h3>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            Focus on high-severity items first to balance your study coverage.
+          </p>
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-2.5">
           {displayAreas.map((area, idx) => {
             const Icon = typeIconMap[area.type];
+            const { bg, badge, icon } = severityColor(area.severity);
             return (
               <div
                 key={`${area.subjectId}-${area.type}-${idx}`}
-                className={`flex items-start gap-3 rounded-[1.25rem] border p-3 transition-all ${severityTone(area.severity)}`}
+                className={`flex items-start gap-3 rounded-2xl p-3.5 transition-all ${bg}`}
               >
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/80 shadow-soft dark:bg-slate-800">
-                  <Icon size={15} className="text-slate-600 dark:text-slate-300" />
+                <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${icon}`}>
+                  <Icon size={15} />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                  <div className="flex flex-wrap items-center gap-2 mb-1">
+                    <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.16em] ${badge}`}>
                       {typeLabelMap[area.type]}
                     </span>
-                    <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
-                      {area.subjectName}
-                    </span>
+                    <span className="text-[11px] font-semibold text-slate-400">{area.subjectName}</span>
                   </div>
-                  <p className="mt-1.5 text-sm leading-6 text-slate-700 dark:text-slate-200">
-                    {area.detail}
-                  </p>
+                  <p className="text-sm font-semibold leading-6 text-navy dark:text-slate-100">{area.detail}</p>
+                </div>
+                <div className="shrink-0 text-right">
+                  <span className="text-sm font-extrabold text-slate-400">{area.severity}%</span>
                 </div>
               </div>
             );
