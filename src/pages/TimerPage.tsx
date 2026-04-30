@@ -18,6 +18,7 @@ import {
   getSessionSyllabusLink,
   getValidSyllabusSelection,
 } from "../utils/syllabusProgress";
+import { cn } from "../lib/cn";
 
 export const TimerPage = () => {
   const navigate = useNavigate();
@@ -254,35 +255,61 @@ export const TimerPage = () => {
             />
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            {!cameraTracking.isCameraActive ? (
-              <Button
-                variant="secondary"
-                onClick={() => void cameraTracking.startCamera()}
-                className="rounded-full border-blue-200/80 bg-white/88 px-5 text-blue-700 shadow-[0_18px_40px_-30px_rgba(37,99,235,0.35)] hover:bg-white dark:border-blue-400/10 dark:bg-slate-900/82 dark:text-blue-100"
-              >
-                <Camera size={15} />
-                Enable tracking
-              </Button>
-            ) : cameraTracking.cameraState === "requesting-permission" ? (
-              <Button variant="secondary" disabled className="rounded-full px-5">
-                <Camera size={15} />
-                Waiting for access
-              </Button>
-            ) : (
-              <Button
-                variant="secondary"
-                onClick={cameraTracking.stopCamera}
-                className="rounded-full border-blue-200/80 bg-white/88 px-5 text-slate-700 shadow-[0_18px_40px_-30px_rgba(37,99,235,0.18)] hover:bg-white dark:border-blue-400/10 dark:bg-slate-900/82 dark:text-slate-100"
-              >
-                <CameraOff size={15} />
-                Disable tracking
-              </Button>
-            )}
+          <div className="flex flex-wrap items-center justify-between gap-4 w-full">
+            <div className="flex flex-wrap items-center gap-2">
+              {!cameraTracking.isCameraActive ? (
+                <Button
+                  variant="secondary"
+                  onClick={() => void cameraTracking.startCamera()}
+                  className="rounded-full border-blue-200/80 bg-white/88 px-5 text-blue-700 shadow-[0_18px_40px_-30px_rgba(37,99,235,0.35)] hover:bg-white dark:border-blue-400/10 dark:bg-slate-900/82 dark:text-blue-100"
+                >
+                  <Camera size={15} />
+                  Enable tracking
+                </Button>
+              ) : cameraTracking.cameraState === "requesting-permission" ? (
+                <Button variant="secondary" disabled className="rounded-full px-5">
+                  <Camera size={15} />
+                  Waiting for access
+                </Button>
+              ) : (
+                <Button
+                  variant="secondary"
+                  onClick={cameraTracking.stopCamera}
+                  className="rounded-full border-blue-200/80 bg-white/88 px-5 text-slate-700 shadow-[0_18px_40px_-30px_rgba(37,99,235,0.18)] hover:bg-white dark:border-blue-400/10 dark:bg-slate-900/82 dark:text-slate-100"
+                >
+                  <CameraOff size={15} />
+                  Disable tracking
+                </Button>
+              )}
 
-            {cameraTracking.error ? (
-              <p className="text-sm text-rose-600 dark:text-rose-300">{cameraTracking.error}</p>
-            ) : null}
+              {cameraTracking.error ? (
+                <p className="text-sm text-rose-600 dark:text-rose-300">{cameraTracking.error}</p>
+              ) : null}
+            </div>
+
+            {cameraTracking.isCameraActive && (
+              <div className="flex items-center gap-2.5 rounded-full border border-blue-200/50 bg-white/50 px-3.5 py-1.5 dark:border-blue-400/10 dark:bg-slate-900/40">
+                <span className="text-[13px] font-medium text-slate-700 dark:text-slate-300" title="Ignore downward head tilt when reading">Desk Mode</span>
+                <button
+                  type="button"
+                  onClick={() => cameraTracking.setDeskMode(!cameraTracking.deskMode)}
+                  className={cn(
+                    "flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full p-0.5 transition-colors duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500",
+                    cameraTracking.deskMode ? "bg-blue-500" : "bg-slate-300 dark:bg-slate-600",
+                  )}
+                  role="switch"
+                  aria-checked={cameraTracking.deskMode}
+                  title="Ignore downward head tilt when reading"
+                >
+                  <span
+                    className={cn(
+                      "h-4 w-4 rounded-full bg-white transition-transform duration-300",
+                      cameraTracking.deskMode ? "translate-x-4" : "translate-x-0",
+                    )}
+                  />
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
