@@ -119,14 +119,14 @@ export const MilestonesPage = () => {
         <GradientCard tone="lavender" className="animate-fade-up p-6 sm:p-7">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
             <div className="space-y-3">
-              <div className="surface-pill inline-flex items-center gap-2 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-600 dark:text-slate-300">
+              <div className="inline-flex items-center gap-2 rounded-full bg-white/20 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-white/90 backdrop-blur-sm">
                 <Award size={13} />
                 Achievements
               </div>
-              <h2 className="text-3xl font-semibold tracking-tight text-slate-900 dark:text-slate-100 sm:text-4xl">
+              <h2 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
                 {achievedCount} of {totalCount} unlocked
               </h2>
-              <p className="max-w-xl text-sm leading-7 text-slate-600 dark:text-slate-300">
+              <p className="max-w-xl text-sm leading-7 text-white/80">
                 {achievedCount === 0
                   ? "Start studying to unlock your first milestone. Every session counts."
                   : achievedCount === totalCount
@@ -138,14 +138,14 @@ export const MilestonesPage = () => {
             <div className="flex items-center gap-4 lg:flex-col lg:items-end">
               <div className="relative grid h-20 w-20 place-items-center rounded-full p-1"
                 style={{
-                  background: `conic-gradient(#5a55f5 ${overallProgress * 3.6}deg, rgba(148,163,184,0.25) 0deg)`,
+                  background: `conic-gradient(#3730a3 ${overallProgress * 3.6}deg, rgba(255,255,255,0.25) 0deg)`,
                 }}
               >
-                <div className="grid h-full w-full place-items-center rounded-full bg-white text-sm font-semibold shadow-soft dark:bg-surface-900">
+                <div className="grid h-full w-full place-items-center rounded-full bg-white text-sm font-bold text-indigo-700 shadow-soft">
                   {overallProgress}%
                 </div>
               </div>
-              <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
+              <p className="text-sm font-semibold text-white/90">
                 Overall Progress
               </p>
             </div>

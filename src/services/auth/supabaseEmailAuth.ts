@@ -1,30 +1,13 @@
-import { createClient, type Session } from "@supabase/supabase-js";
+/**
+ * Supabase email auth — uses the shared client from supabaseClient.ts.
+ */
+import type { Session } from "@supabase/supabase-js";
+import { getSupabaseClient, isSupabaseConfigured } from "../data/supabaseClient";
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-export const isSupabaseEmailAuthConfigured = Boolean(supabaseUrl && supabaseAnonKey);
-
-const supabase = isSupabaseEmailAuthConfigured
-  ? createClient(supabaseUrl!, supabaseAnonKey!, {
-      auth: {
-        autoRefreshToken: true,
-        detectSessionInUrl: true,
-        persistSession: true,
-      },
-    })
-  : null;
-
-const getSupabase = () => {
-  if (!supabase) {
-    throw new Error("Supabase email auth is not configured.");
-  }
-
-  return supabase;
-};
+export const isSupabaseEmailAuthConfigured = isSupabaseConfigured;
 
 export const sendVerificationEmailLink = async (email: string, shouldCreateUser: boolean) => {
-  const client = getSupabase();
+  const client = getSupabaseClient();
   const { error } = await client.auth.signInWithOtp({
     email,
     options: {
@@ -39,14 +22,14 @@ export const sendVerificationEmailLink = async (email: string, shouldCreateUser:
 };
 
 export const getCurrentEmailAuthSession = async () => {
-  if (!supabase) {
+  if (!isSupabaseConfigured) {
     return null;
   }
 
   const {
     data: { session },
     error,
-  } = await supabase.auth.getSession();
+  } = await getSupabaseClient().auth.getSession();
 
   if (error) {
     throw error;
@@ -56,15 +39,20 @@ export const getCurrentEmailAuthSession = async () => {
 };
 
 export const onEmailAuthStateChange = (callback: (session: Session | null) => void) => {
-  if (!supabase) {
+  if (!isSupabaseConfigured) {
     return () => undefined;
   }
 
   const {
     data: { subscription },
-  } = supabase.auth.onAuthStateChange((_event, session) => {
+  } = getSupabaseClient().auth.onAuthStateChange((_event, session) => {
     callback(session);
   });
 
   return () => subscription.unsubscribe();
+};
+
+export const signOut = async () => {
+  if (!isSupabaseConfigured) return;
+  await getSupabaseClient().auth.signOut();
 };

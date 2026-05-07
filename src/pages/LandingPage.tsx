@@ -81,12 +81,12 @@ export const LandingPage = () => {
 
         {/* 4. Mock Preview Hero Extension */}
         <section className="w-full max-w-6xl px-4 animate-fade-up" style={{ animationDelay: "200ms" }}>
-          <div className="relative rounded-[2.5rem] border border-white/40 bg-white/40 p-4 shadow-2xl backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/40 sm:p-6">
-            <div className="aspect-[16/10] w-full overflow-hidden rounded-[2rem] border border-slate-200/50 bg-slate-50 dark:border-slate-700/50 dark:bg-slate-950 relative flex items-center justify-center">
+          <div className="relative rounded-[2.5rem] border border-white/40 bg-white/40 p-3 shadow-2xl backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/40 sm:p-6">
+            <div className="w-full overflow-hidden rounded-[1.5rem] sm:rounded-[2rem] border border-slate-200/50 bg-slate-50 dark:border-slate-700/50 dark:bg-slate-950 relative">
               <div className="absolute inset-0 bg-gradient-to-br from-brand-50 to-indigo-50 dark:from-surface-900 dark:to-surface-800" />
-              <div className="relative w-[85%] h-[85%] rounded-2xl bg-[#f8f9fc] dark:bg-surface-900 shadow-2xl border border-slate-200/60 dark:border-slate-800 flex overflow-hidden">
-                {/* Sidebar */}
-                <div className="w-48 bg-white dark:bg-surface-800 border-r border-slate-100 dark:border-slate-700 p-4 space-y-6">
+              <div className="relative mx-auto w-[92%] sm:w-[85%] my-6 sm:my-10 rounded-2xl bg-[#f8f9fc] dark:bg-surface-900 shadow-2xl border border-slate-200/60 dark:border-slate-800 flex overflow-hidden">
+                {/* Sidebar — hidden on mobile */}
+                <div className="hidden md:block w-48 bg-white dark:bg-surface-800 border-r border-slate-100 dark:border-slate-700 p-4 space-y-6 shrink-0">
                   <div className="flex items-center gap-2 px-2">
                     <div className="flex h-6 w-6 items-center justify-center rounded bg-brand-500">
                       <img src="/focusflow-icon.svg" alt="FocusFlow Logo" className="h-4 w-4 brightness-0 invert" />
@@ -102,45 +102,52 @@ export const LandingPage = () => {
                   </div>
                 </div>
                 {/* Main Content */}
-                <div className="flex-1 p-6 space-y-6 overflow-hidden">
+                <div className="flex-1 p-4 sm:p-6 space-y-4 sm:space-y-6 overflow-hidden">
+                  {/* Mobile mini nav bar */}
+                  <div className="flex md:hidden items-center gap-2 mb-2">
+                    <div className="flex h-6 w-6 items-center justify-center rounded bg-brand-500">
+                      <img src="/focusflow-icon.svg" alt="FocusFlow Logo" className="h-4 w-4 brightness-0 invert" />
+                    </div>
+                    <span className="font-bold text-xs dark:text-white">FocusFlow</span>
+                  </div>
                   <div className="flex justify-between items-center">
                     <div>
-                      <h3 className="text-xl font-bold dark:text-white">Good evening, Alex</h3>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">You're on a 5-day streak. Keep it up!</p>
+                      <h3 className="text-base sm:text-xl font-bold dark:text-white">Good evening, Alex</h3>
+                      <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400">You're on a 5-day streak. Keep it up!</p>
                     </div>
                     <div className="flex gap-2">
-                      <div className="h-8 w-8 rounded-full bg-brand-100 flex items-center justify-center text-xs font-bold text-brand-600">AL</div>
+                      <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-brand-100 flex items-center justify-center text-[10px] sm:text-xs font-bold text-brand-600">AL</div>
                     </div>
                   </div>
                   
                   {/* Quick Stats */}
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="rounded-2xl bg-white dark:bg-surface-800 p-4 border border-slate-100 dark:border-slate-700 shadow-sm">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Today's Focus</p>
-                      <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">145 <span className="text-sm font-medium text-slate-400">min</span></p>
+                  <div className="grid grid-cols-3 gap-2 sm:gap-4">
+                    <div className="rounded-xl sm:rounded-2xl bg-white dark:bg-surface-800 p-2.5 sm:p-4 border border-slate-100 dark:border-slate-700 shadow-sm">
+                      <p className="text-[8px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-500">Today's Focus</p>
+                      <p className="text-lg sm:text-2xl font-bold text-slate-900 dark:text-white mt-0.5 sm:mt-1">145 <span className="text-[10px] sm:text-sm font-medium text-slate-400">min</span></p>
                     </div>
-                    <div className="rounded-2xl bg-white dark:bg-surface-800 p-4 border border-slate-100 dark:border-slate-700 shadow-sm">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Topics Completed</p>
-                      <p className="text-2xl font-bold text-slate-900 dark:text-white mt-1">4</p>
+                    <div className="rounded-xl sm:rounded-2xl bg-white dark:bg-surface-800 p-2.5 sm:p-4 border border-slate-100 dark:border-slate-700 shadow-sm">
+                      <p className="text-[8px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-500">Topics Done</p>
+                      <p className="text-lg sm:text-2xl font-bold text-slate-900 dark:text-white mt-0.5 sm:mt-1">4</p>
                     </div>
-                    <div className="rounded-2xl bg-white dark:bg-surface-800 p-4 border border-slate-100 dark:border-slate-700 shadow-sm">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Current Streak</p>
-                      <p className="text-2xl font-bold text-emerald-500 mt-1">5 <span className="text-sm font-medium text-emerald-400">days</span></p>
+                    <div className="rounded-xl sm:rounded-2xl bg-white dark:bg-surface-800 p-2.5 sm:p-4 border border-slate-100 dark:border-slate-700 shadow-sm">
+                      <p className="text-[8px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-500">Streak</p>
+                      <p className="text-lg sm:text-2xl font-bold text-emerald-500 mt-0.5 sm:mt-1">5 <span className="text-[10px] sm:text-sm font-medium text-emerald-400">days</span></p>
                     </div>
                   </div>
 
                   {/* Active Syllabus */}
-                  <div className="rounded-2xl bg-white dark:bg-surface-800 p-5 border border-slate-100 dark:border-slate-700 shadow-sm flex flex-col gap-4">
+                  <div className="rounded-xl sm:rounded-2xl bg-white dark:bg-surface-800 p-3 sm:p-5 border border-slate-100 dark:border-slate-700 shadow-sm flex flex-col gap-3 sm:gap-4">
                     <div className="flex justify-between items-center">
-                      <p className="text-sm font-bold dark:text-white">Up Next: Mathematics-II</p>
-                      <span className="text-xs font-semibold text-brand-500 bg-brand-50 dark:bg-brand-500/10 px-2 py-1 rounded">Unit 2</span>
+                      <p className="text-xs sm:text-sm font-bold dark:text-white">Up Next: Mathematics-II</p>
+                      <span className="text-[10px] sm:text-xs font-semibold text-brand-500 bg-brand-50 dark:bg-brand-500/10 px-2 py-0.5 sm:py-1 rounded">Unit 2</span>
                     </div>
-                    <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
+                    <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-900/50 p-2.5 sm:p-3 rounded-lg sm:rounded-xl border border-slate-100 dark:border-slate-800">
                       <div>
-                        <p className="text-sm font-semibold dark:text-slate-200">Laplace Transforms</p>
-                        <p className="text-xs text-slate-500">Recommended duration: 45m</p>
+                        <p className="text-xs sm:text-sm font-semibold dark:text-slate-200">Laplace Transforms</p>
+                        <p className="text-[10px] sm:text-xs text-slate-500">Recommended: 45m</p>
                       </div>
-                      <div className="h-8 px-4 rounded-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center text-xs font-bold">
+                      <div className="h-7 sm:h-8 px-3 sm:px-4 rounded-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center text-[10px] sm:text-xs font-bold">
                         Start
                       </div>
                     </div>
