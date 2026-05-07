@@ -1,14 +1,17 @@
 import type { PropsWithChildren } from "react";
 import { useEffect } from "react";
 import { Outlet } from "react-router-dom";
+import { Menu } from "lucide-react";
 import { PersistentTimerWidget } from "../../features/timer/PersistentTimerWidget";
 import { MobileNav } from "./MobileNav";
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
 import { useLocalStorageState } from "../../hooks/useLocalStorageState";
+import { cn } from "../../lib/cn";
 
 export const AppLayout = ({ children }: PropsWithChildren) => {
   const [darkMode, setDarkMode] = useLocalStorageState("focusflow.darkmode.v1", false);
+  const [isSidebarOpen, setIsSidebarOpen] = useLocalStorageState("focusflow.sidebar.v1", true);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -27,9 +30,21 @@ export const AppLayout = ({ children }: PropsWithChildren) => {
       </div>
 
       <div className="relative flex min-h-screen">
-        <Sidebar />
-        <div className="flex min-h-screen flex-1 flex-col min-w-0">
-          <Topbar darkMode={darkMode} toggleDarkMode={() => setDarkMode((v) => !v)} />
+        {/* Desktop Sidebar Toggle Button */}
+        <button
+          onClick={() => setIsSidebarOpen((v) => !v)}
+          className="hidden lg:flex fixed top-4 left-4 z-50 h-11 w-11 items-center justify-center rounded-2xl bg-cream/80 backdrop-blur-md text-slate-500 shadow-sm transition hover:bg-coral hover:text-white dark:bg-surface-800/80 dark:text-slate-400 border border-cream-200 dark:border-white/10"
+          aria-label="Toggle Sidebar"
+        >
+          <Menu size={20} />
+        </button>
+
+        <Sidebar isOpen={isSidebarOpen} />
+        <div className={cn("flex min-h-screen flex-1 flex-col min-w-0 transition-all duration-300", !isSidebarOpen ? "lg:pl-16" : "")}>
+          <Topbar 
+            darkMode={darkMode} 
+            toggleDarkMode={() => setDarkMode((v) => !v)} 
+          />
           <main className="flex-1 px-4 pb-28 pt-5 sm:px-6 lg:px-8 lg:pb-10 lg:pt-6">
             {children ?? <Outlet />}
           </main>

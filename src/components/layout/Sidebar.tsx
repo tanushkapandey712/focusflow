@@ -15,7 +15,7 @@ const navItems = [
   { to: "/settings",  label: "Settings",       icon: Settings2 },
 ];
 
-export const Sidebar = () => {
+export const Sidebar = ({ isOpen }: { isOpen?: boolean }) => {
   const { profile } = useFocusFlowData();
   const initials = (profile.name ?? "S")
     .split(" ")
@@ -25,8 +25,12 @@ export const Sidebar = () => {
     .toUpperCase();
 
   return (
-    <aside className="hidden w-[18.5rem] px-4 py-5 lg:block">
-      <div className="soft-surface animate-fade-up flex h-full flex-col p-4">
+    <aside className={cn(
+      "hidden lg:block transition-all duration-300 ease-in-out overflow-hidden relative",
+      isOpen !== false ? "w-[18.5rem]" : "w-0"
+    )}>
+      <div className="w-[18.5rem] px-4 pb-5 pt-20 h-full">
+        <div className="soft-surface animate-fade-up flex h-full flex-col p-4">
         {/* Logo */}
         <div className="mb-7 flex items-center gap-3 px-1">
           <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-card-coral shadow-soft">
@@ -98,6 +102,7 @@ export const Sidebar = () => {
             </div>
           </NavLink>
         </div>
+      </div>
       </div>
     </aside>
   );
