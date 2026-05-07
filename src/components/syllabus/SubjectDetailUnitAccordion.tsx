@@ -8,7 +8,6 @@ import {
   getNextTopicToStudy,
   getSyllabusTopicStatus,
   getTopicProgressLabel,
-  getTopicStatusTone,
   getTopicTimeSpentLabel,
   getUnitCompletedTopicCount,
   getUnitCompletionPercent,
@@ -215,8 +214,8 @@ export const SubjectDetailUnitAccordion = ({
                                 </div>
                               </div>
                             ) : (
-                              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                                <div className="min-w-0">
+                              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                <div className="min-w-0 flex flex-col gap-1">
                                   <p
                                     className={cn(
                                       "text-sm font-medium text-slate-900 dark:text-slate-100",
@@ -226,26 +225,54 @@ export const SubjectDetailUnitAccordion = ({
                                   >
                                     {topic.title}
                                   </p>
+                                  <div className="flex items-center gap-2">
+                                    {topic.studiedMinutes > 0 ? (
+                                      <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                                        {topic.studiedMinutes} min studied
+                                      </span>
+                                    ) : null}
+                                    <span
+                                      className={cn(
+                                        "text-[10px] font-bold uppercase tracking-wider",
+                                        topicStatus === "completed" ? "text-emerald-500" : topicStatus === "in_progress" ? "text-amber-500" : "text-slate-400"
+                                      )}
+                                    >
+                                      {getTopicProgressLabel(topic)}
+                                    </span>
+                                  </div>
                                 </div>
 
                                 <div className="flex shrink-0 flex-wrap items-center gap-2">
-                                  {topic.studiedMinutes > 0 ? (
-                                    <span className="surface-pill px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-300">
-                                      {topic.studiedMinutes} min
-                                    </span>
-                                  ) : null}
-                                  <span
-                                    className={cn(
-                                      "inline-flex rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em]",
-                                      getTopicStatusTone(topic),
-                                    )}
+                                  <Button
+                                    variant="secondary"
+                                    onClick={() => window.location.href = `/timer?subject=${subjectName}&unit=${unit.id}&topic=${topic.id}`}
+                                    className="h-8 rounded-full px-3 text-xs bg-brand-50 text-brand-600 hover:bg-brand-100 dark:bg-brand-500/10 dark:text-brand-300 dark:hover:bg-brand-500/20 border-transparent shadow-none"
                                   >
-                                    {getTopicProgressLabel(topic)}
-                                  </span>
+                                    Start Session
+                                  </Button>
+                                  <Button
+                                    variant="secondary"
+                                    onClick={() => onToggleTopic(topic.id)}
+                                    className="h-8 rounded-full px-3 text-xs"
+                                  >
+                                    {topicStatus === "completed" ? "Mark Incomplete" : "Mark Complete"}
+                                  </Button>
+                                  <Button
+                                    variant="secondary"
+                                    onClick={() => {
+                                      // Implement Add Notes later or open a modal
+                                      alert(`Add notes for ${topic.title} (Coming Soon)`);
+                                    }}
+                                    className="h-8 rounded-full px-3 text-xs"
+                                  >
+                                    Add Notes
+                                  </Button>
+                                  
+                                  {/* Original Edit and Delete buttons */}
                                   <Button
                                     variant="secondary"
                                     onClick={() => startEditingTopic(topic)}
-                                    className="h-8 w-8 rounded-full p-0"
+                                    className="h-8 w-8 rounded-full p-0 ml-2"
                                     aria-label={`Edit ${topic.title}`}
                                     title={`Edit ${topic.title}`}
                                   >

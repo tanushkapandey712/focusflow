@@ -1,28 +1,20 @@
 import { useState } from "react";
-import { BookOpenText, Plus, Search, ChevronsUpDown, ChevronsDownUp } from "lucide-react";
+import { BookOpenText, Plus, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { SyllabusImportCard } from "../components/syllabus/SyllabusImportCard";
 import { SyllabusSubjectCard } from "../components/syllabus/SyllabusSubjectCard";
 import { DashboardContainer } from "../components/dashboard/DashboardContainer";
 import { Button, Card, SectionContainer } from "../components/ui";
 import { useFocusFlowData } from "../hooks/useFocusFlowData";
-import type { Subject } from "../types/models";
 import { buildSubjectsFromNames, normalizeSubjectName } from "../utils/subjects";
-import {
-  createSyllabusTopic,
-  createSyllabusUnit,
-  toggleTopicCompletionStatus,
-} from "../utils/syllabus";
 
 export const SyllabusHubPage = () => {
   const navigate = useNavigate();
-  const { subjects, addSubject, updateSubject, saveReviewedSyllabus, getSubjectSyllabus } =
+  const { subjects, addSubject, saveReviewedSyllabus, getSubjectSyllabus } =
     useFocusFlowData();
   const [newSubjectName, setNewSubjectName] = useState("");
   const [error, setError] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [globalExpandState, setGlobalExpandState] = useState<boolean | undefined>(undefined);
-  const [remountKey, setRemountKey] = useState(0);
 
   const handleAddSubject = () => {
     const title = newSubjectName.trim();
@@ -51,135 +43,6 @@ export const SyllabusHubPage = () => {
     addSubject(nextSubject);
     setNewSubjectName("");
     setError("");
-  };
-
-  const getSubjectById = (subjectId: string) => subjects.find((subject) => subject.id === subjectId);
-
-  const handleSubjectUnitsUpdate = (subject: Subject, nextUnits: Subject["syllabusUnits"]) => {
-    updateSubject(subject.id, { syllabusUnits: nextUnits });
-  };
-
-  const handleAddUnit = (subjectId: string, title: string) => {
-    const subject = getSubjectById(subjectId);
-
-    if (!subject) {
-      return;
-    }
-
-    handleSubjectUnitsUpdate(subject, [...subject.syllabusUnits, createSyllabusUnit(title)]);
-  };
-
-  const handleAddTopic = (subjectId: string, unitId: string, title: string) => {
-    const subject = getSubjectById(subjectId);
-
-    if (!subject) {
-      return;
-    }
-
-    const nextUnits = subject.syllabusUnits.map((unit) =>
-      unit.id === unitId ? { ...unit, topics: [...unit.topics, createSyllabusTopic(title)] } : unit,
-    );
-
-    handleSubjectUnitsUpdate(subject, nextUnits);
-  };
-
-  const handleRenameUnit = (subjectId: string, unitId: string, title: string) => {
-    const subject = getSubjectById(subjectId);
-
-    if (!subject) {
-      return;
-    }
-
-    const nextUnits = subject.syllabusUnits.map((unit) =>
-      unit.id === unitId ? { ...unit, title } : unit,
-    );
-
-    handleSubjectUnitsUpdate(subject, nextUnits);
-  };
-
-  const handleDeleteUnit = (subjectId: string, unitId: string) => {
-    const subject = getSubjectById(subjectId);
-
-    if (!subject) {
-      return;
-    }
-
-    const nextUnits = subject.syllabusUnits.filter((unit) => unit.id !== unitId);
-    handleSubjectUnitsUpdate(subject, nextUnits);
-  };
-
-  const handleRenameTopic = (
-    subjectId: string,
-    unitId: string,
-    topicId: string,
-    title: string,
-  ) => {
-    const subject = getSubjectById(subjectId);
-
-    if (!subject) {
-      return;
-    }
-
-    const nextUnits = subject.syllabusUnits.map((unit) =>
-      unit.id === unitId
-        ? {
-            ...unit,
-            topics: unit.topics.map((topic) => (topic.id === topicId ? { ...topic, title } : topic)),
-          }
-        : unit,
-    );
-
-    handleSubjectUnitsUpdate(subject, nextUnits);
-  };
-
-  const handleDeleteTopic = (subjectId: string, unitId: string, topicId: string) => {
-    const subject = getSubjectById(subjectId);
-
-    if (!subject) {
-      return;
-    }
-
-    const nextUnits = subject.syllabusUnits.map((unit) =>
-      unit.id === unitId
-        ? {
-            ...unit,
-            topics: unit.topics.filter((topic) => topic.id !== topicId),
-          }
-        : unit,
-    );
-
-    handleSubjectUnitsUpdate(subject, nextUnits);
-  };
-
-  const handleToggleTopic = (subjectId: string, unitId: string, topicId: string) => {
-    const subject = getSubjectById(subjectId);
-
-    if (!subject) {
-      return;
-    }
-
-    const nextUnits = subject.syllabusUnits.map((unit) =>
-      unit.id === unitId
-        ? {
-            ...unit,
-            topics: unit.topics.map((topic) =>
-              topic.id === topicId ? toggleTopicCompletionStatus(topic) : topic,
-            ),
-          }
-        : unit,
-    );
-
-    handleSubjectUnitsUpdate(subject, nextUnits);
-  };
-
-  const handleExpandAll = () => {
-    setGlobalExpandState(true);
-    setRemountKey(k => k + 1);
-  };
-
-  const handleCollapseAll = () => {
-    setGlobalExpandState(false);
-    setRemountKey(k => k + 1);
   };
 
   const filteredSubjects = subjects.filter((subject) => {
@@ -214,7 +77,7 @@ export const SyllabusHubPage = () => {
                 Build subjects with units and topics
               </h2>
               <p className="text-sm leading-6 text-slate-600 dark:text-slate-300">
-                Add a subject once, then keep its full syllabus broken down into manageable units and topics.
+                Add a subject once, then click into it to break it down into manageable units and topics.
               </p>
             </div>
 
@@ -267,16 +130,6 @@ export const SyllabusHubPage = () => {
                   className="field-surface pl-10"
                 />
               </div>
-              <div className="flex items-center gap-2">
-                <Button variant="secondary" onClick={handleExpandAll} className="rounded-full px-4 text-xs">
-                  <ChevronsUpDown size={14} />
-                  Expand All
-                </Button>
-                <Button variant="secondary" onClick={handleCollapseAll} className="rounded-full px-4 text-xs">
-                  <ChevronsDownUp size={14} />
-                  Collapse All
-                </Button>
-              </div>
             </div>
 
             {filteredSubjects.length === 0 ? (
@@ -296,16 +149,8 @@ export const SyllabusHubPage = () => {
               <div className="grid gap-4 xl:grid-cols-2">
                 {filteredSubjects.map((subject) => (
                   <SyllabusSubjectCard
-                    key={`${subject.id}-${remountKey}`}
-                    defaultExpanded={globalExpandState ?? false}
+                    key={subject.id}
                     subject={{ ...subject, syllabusUnits: getSubjectSyllabus(subject.id) }}
-                    onAddUnit={handleAddUnit}
-                    onAddTopic={handleAddTopic}
-                    onRenameUnit={handleRenameUnit}
-                    onDeleteUnit={handleDeleteUnit}
-                    onRenameTopic={handleRenameTopic}
-                    onDeleteTopic={handleDeleteTopic}
-                    onToggleTopic={handleToggleTopic}
                     onOpenSubject={(subjectId) => navigate(`/syllabus/${subjectId}`)}
                   />
                 ))}

@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Sparkles, TrendingUp } from "lucide-react";
+import { Sparkles, TrendingUp, Clock, AlertTriangle, Zap, BookOpen, AlertCircle } from "lucide-react";
 import { StudyHeatmapCard } from "../components/analytics/StudyHeatmapCard";
 import { DashboardContainer } from "../components/dashboard/DashboardContainer";
 import { SubjectBadge } from "../components/subjects/SubjectBadge";
@@ -13,7 +13,7 @@ import {
   getSubjectDistribution,
   getWeeklyTrend,
 } from "../utils/analytics";
-import { getDominantSubjectFromSessions, getResolvedSubject, getSubjectVisuals, withAlpha } from "../utils/subjects";
+import { getResolvedSubject } from "../utils/subjects";
 import {
   Bar,
   BarChart,
@@ -54,38 +54,60 @@ export const AnalyticsPage = () => {
   const focusTrend = getFocusVsDistractionTrend(sessions, 7);
   const heatmap = getStudyHeatmap(sessions, 28);
   const hasData = sessions.length > 0;
+  
   const totalMinutes = sessions.reduce((sum, session) => sum + session.actualMinutes, 0);
-  const weeklyMinutes = dailyStudyTime.reduce((sum, item) => sum + item.value, 0);
-  const averageFocus =
-    sessions.length === 0
-      ? 0
-      : Math.round(
-          sessions.reduce((sum, session) => {
-            const focusScore = Math.min(
-              100,
-              Math.round((session.actualMinutes / Math.max(1, session.plannedMinutes)) * 100),
-            );
-            return sum + focusScore;
-          }, 0) / sessions.length,
-        );
-  const activeDays = heatmap.filter((cell) => cell.minutes > 0).length;
-  const topSubject = getDominantSubjectFromSessions(sessions, subjects);
-  const topSubjectMinutes = topSubject
-    ? sessions
-        .filter(
-          (session) =>
-            session.subjectId === topSubject.id || session.subjectName.toLowerCase() === topSubject.name.toLowerCase(),
-        )
-        .reduce((sum, session) => sum + session.actualMinutes, 0)
-    : 0;
-  const topSubjectShare = Math.min(100, Math.round((topSubjectMinutes / Math.max(1, totalMinutes)) * 100));
-  const topSubjectVisuals = topSubject ? getSubjectVisuals(topSubject.color) : undefined;
+
+  // Best Study Hours
+  const hourCounts = sessions.reduce((acc, session) => {
+    const hour = new Date(session.startedAt).getHours();
+    acc[hour] = (acc[hour] || 0) + session.actualMinutes;
+    return acc;
+  }, {} as Record<number, number>);
+  const bestHour = Object.entries(hourCounts).sort(([,a], [,b]) => b - a)[0]?.[0];
+  const bestStudyHourStr = bestHour 
+    ? `${parseInt(bestHour) % 12 || 12} ${parseInt(bestHour) >= 12 ? 'PM' : 'AM'} - ${(parseInt(bestHour)+1) % 12 || 12} ${(parseInt(bestHour)+1) >= 12 ? 'PM' : 'AM'}` 
+    : "Not enough data";
+
+  // Distraction Analytics
+  const allTags = sessions.flatMap(s => s.distractionTags || []);
+  const tagCounts = allTags.reduce((acc, tag) => {
+    acc[tag] = (acc[tag] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+  const mostCommonDistraction = Object.entries(tagCounts).sort(([,a], [,b]) => b - a)[0]?.[0] || "None logged";
+
+  // Consistency (Streak)
+  let currentStreak = 0;
+  let today = new Date();
+  today.setHours(0,0,0,0);
+  for (let i = 0; i < 365; i++) {
+    const checkDate = new Date(today);
+    checkDate.setDate(today.getDate() - i);
+    const dayHasSession = sessions.some(s => {
+      const sDate = new Date(s.startedAt);
+      return sDate.getFullYear() === checkDate.getFullYear() && sDate.getMonth() === checkDate.getMonth() && sDate.getDate() === checkDate.getDate();
+    });
+    if (dayHasSession) currentStreak++;
+    else if (i !== 0) break; // skip today if no session yet, but break if yesterday had no session
+  }
+
+  // Subject Performance
+  const subjectMins = sessions.reduce((acc, s) => {
+    acc[s.subjectName] = (acc[s.subjectName] || 0) + s.actualMinutes;
+    return acc;
+  }, {} as Record<string, number>);
+  const sortedSubjects = Object.entries(subjectMins).sort(([,a], [,b]) => b - a);
+  const strongestSubject = sortedSubjects[0]?.[0] || "None";
+  const weakestSubject = sortedSubjects.length > 1 ? sortedSubjects[sortedSubjects.length - 1]?.[0] : "None";
+  
+  // Find neglected subject (in subjects list but 0 minutes)
+  const neglectedSubject = subjects.find(sub => !subjectMins[sub.name])?.name || "None";
 
   return (
     <DashboardContainer>
       <SectionContainer
-        title="Analytics"
-        description="Clear trends, calmer charts, and a more readable sense of what is actually working."
+        title="Analytics & Insights"
+        description="Deep dive into your productivity trends, best study hours, and distraction patterns."
       >
         {!hasData ? (
           <Card className="p-6">
@@ -95,72 +117,95 @@ export const AnalyticsPage = () => {
           </Card>
         ) : (
           <>
-            <div className="grid gap-4 lg:grid-cols-3">
+            {/* 1. Focus Trends & Consistency Overview */}
+            <div className="grid gap-4 lg:grid-cols-4">
               <AnimatedCard delay={0} className="animate-fade-up">
-                <Card className="space-y-3 p-5 sm:p-6">
-                  <div className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-brand-700/10 text-brand-700">
+                <Card className="space-y-3 p-5 h-full border-l-4 border-l-brand-500">
+                  <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-brand-50 text-brand-600 dark:bg-brand-900/30 dark:text-brand-400">
                     <TrendingUp size={18} />
                   </div>
-                  <div className="space-y-1">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
-                      Weekly Minutes
-                    </p>
-                    <p className="text-3xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
-                      {weeklyMinutes}m
-                    </p>
-                    <p className="text-sm leading-6 text-slate-500 dark:text-slate-300">
-                      Across the last 7 days.
-                    </p>
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Total Focus</p>
+                    <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{totalMinutes} <span className="text-sm font-medium text-slate-500">min</span></p>
                   </div>
                 </Card>
               </AnimatedCard>
 
-              <AnimatedCard delay={80} className="animate-fade-up">
-                <Card className="space-y-3 p-5 sm:p-6">
-                  <div className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-600">
-                    <Sparkles size={18} />
+              <AnimatedCard delay={50} className="animate-fade-up">
+                <Card className="space-y-3 p-5 h-full border-l-4 border-l-orange-500">
+                  <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-orange-50 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400">
+                    <Zap size={18} />
                   </div>
-                  <div className="space-y-1">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
-                      Average Focus
-                    </p>
-                    <p className="text-3xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
-                      {averageFocus}%
-                    </p>
-                    <p className="text-sm leading-6 text-slate-500 dark:text-slate-300">
-                      {activeDays} active days in the last 28.
-                    </p>
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Current Streak</p>
+                    <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{currentStreak} <span className="text-sm font-medium text-slate-500">days</span></p>
                   </div>
                 </Card>
               </AnimatedCard>
 
-              <AnimatedCard delay={160} className="animate-fade-up">
-                <Card className="space-y-4 p-5 sm:p-6" style={topSubjectVisuals?.panelStyle}>
-                  <div className="space-y-1">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
-                      Top Subject
-                    </p>
-                    {topSubject ? (
-                      <>
-                        <SubjectBadge subject={topSubject} />
-                        <p className="text-sm leading-6 text-slate-600 dark:text-slate-300">
-                          {topSubjectMinutes} minutes logged, {topSubjectShare}% of total study time.
-                        </p>
-                      </>
-                    ) : (
-                      <p className="text-sm leading-6 text-slate-500 dark:text-slate-300">
-                        Start a few sessions to reveal your strongest subject pattern.
-                      </p>
-                    )}
+              <AnimatedCard delay={100} className="animate-fade-up">
+                <Card className="space-y-3 p-5 h-full border-l-4 border-l-emerald-500">
+                  <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
+                    <Clock size={18} />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Best Study Hours</p>
+                    <p className="text-lg font-bold text-slate-900 dark:text-slate-100 mt-1">{bestStudyHourStr}</p>
+                  </div>
+                </Card>
+              </AnimatedCard>
+              
+              <AnimatedCard delay={150} className="animate-fade-up">
+                <Card className="space-y-3 p-5 h-full border-l-4 border-l-rose-500">
+                  <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-rose-50 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400">
+                    <AlertTriangle size={18} />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Top Distraction</p>
+                    <p className="text-lg font-bold text-slate-900 dark:text-slate-100 mt-1 capitalize">{mostCommonDistraction}</p>
                   </div>
                 </Card>
               </AnimatedCard>
             </div>
 
+            {/* 2. Subject Performance */}
+            <AnimatedCard delay={200} className="animate-fade-up mt-6">
+              <div className="grid gap-4 lg:grid-cols-3">
+                <Card className="p-5 flex items-center gap-4 border border-slate-200/60 shadow-sm">
+                  <div className="h-12 w-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
+                    <Sparkles size={20} />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Strongest Subject</p>
+                    <p className="font-semibold text-slate-900 dark:text-slate-100">{strongestSubject}</p>
+                  </div>
+                </Card>
+                <Card className="p-5 flex items-center gap-4 border border-slate-200/60 shadow-sm">
+                  <div className="h-12 w-12 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center shrink-0">
+                    <BookOpen size={20} />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Weakest Subject</p>
+                    <p className="font-semibold text-slate-900 dark:text-slate-100">{weakestSubject}</p>
+                  </div>
+                </Card>
+                <Card className="p-5 flex items-center gap-4 border border-slate-200/60 shadow-sm">
+                  <div className="h-12 w-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
+                    <AlertCircle size={20} />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Neglected Subject</p>
+                    <p className="font-semibold text-slate-900 dark:text-slate-100">{neglectedSubject}</p>
+                  </div>
+                </Card>
+              </div>
+            </AnimatedCard>
+
             <StudyHeatmapCard cells={heatmap} subjects={subjects} />
 
+            {/* 3. Charts */}
             <div className="grid gap-4 lg:grid-cols-2">
-              <AnimatedCard delay={40} className="animate-fade-up">
+              <AnimatedCard delay={250} className="animate-fade-up">
                 <Card className={chartCardClassName}>
                   <div className="space-y-1">
                     <h2 className="text-xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
@@ -178,9 +223,9 @@ export const AnalyticsPage = () => {
                         <Line
                           type="monotone"
                           dataKey="value"
-                          stroke={topSubject?.color ?? "#5a55f5"}
+                          stroke="#5a55f5"
                           strokeWidth={3}
-                          dot={{ r: 3, fill: topSubject?.color ?? "#5a55f5" }}
+                          dot={{ r: 3, fill: "#5a55f5" }}
                         />
                       </LineChart>
                     </ResponsiveContainer>
@@ -188,7 +233,7 @@ export const AnalyticsPage = () => {
                 </Card>
               </AnimatedCard>
 
-              <AnimatedCard delay={120} className="animate-fade-up">
+              <AnimatedCard delay={300} className="animate-fade-up">
                 <Card className={chartCardClassName}>
                   <div className="space-y-1">
                     <h2 className="text-xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
@@ -203,7 +248,7 @@ export const AnalyticsPage = () => {
                         <XAxis dataKey="label" tickLine={false} axisLine={false} />
                         <YAxis tickLine={false} axisLine={false} />
                         <Tooltip />
-                        <Bar dataKey="value" fill={topSubject?.color ?? "#7c73ff"} radius={[10, 10, 0, 0]} />
+                        <Bar dataKey="value" fill="#7c73ff" radius={[10, 10, 0, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -211,8 +256,8 @@ export const AnalyticsPage = () => {
               </AnimatedCard>
             </div>
 
-            <div className="grid gap-4 lg:grid-cols-2">
-              <AnimatedCard delay={80} className="animate-fade-up">
+            <div className="grid gap-4 lg:grid-cols-2 mt-4">
+              <AnimatedCard delay={350} className="animate-fade-up">
                 <Card className={chartCardClassName}>
                   <div className="space-y-1">
                     <h2 className="text-xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
@@ -257,14 +302,6 @@ export const AnalyticsPage = () => {
                           <div
                             key={item.id}
                             className="rounded-[1.35rem] border border-slate-200/70 bg-white/70 p-3 shadow-soft dark:border-white/10 dark:bg-surface-900/70"
-                            style={
-                              subject
-                                ? {
-                                    borderColor: withAlpha(subject.color, 0.16),
-                                    boxShadow: `0 18px 38px -32px ${withAlpha(subject.color, 0.55)}`,
-                                  }
-                                : undefined
-                            }
                           >
                             {subject ? <SubjectBadge subject={subject} /> : null}
                             <div className="mt-3 flex items-center justify-between gap-3 text-sm text-slate-600 dark:text-slate-300">
@@ -281,11 +318,11 @@ export const AnalyticsPage = () => {
                 </Card>
               </AnimatedCard>
 
-              <AnimatedCard delay={160} className="animate-fade-up">
+              <AnimatedCard delay={400} className="animate-fade-up">
                 <Card className={chartCardClassName}>
                   <div className="space-y-1">
                     <h2 className="text-xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
-                      Focus Trend
+                      Distraction Pattern
                     </h2>
                     <p className="text-sm text-slate-500 dark:text-slate-300">Focus score vs distractions</p>
                   </div>

@@ -34,7 +34,7 @@ export const Sidebar = ({ isOpen }: { isOpen?: boolean }) => {
         {/* Logo */}
         <div className="mb-7 flex items-center gap-3 px-1">
           <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-card-coral shadow-soft">
-            <Sparkles size={18} className="text-white" />
+            <img src="/focusflow-icon.svg" alt="FocusFlow Logo" className="h-5 w-5 brightness-0 invert" />
           </div>
           <div>
             <p className="text-base font-extrabold tracking-tight text-navy dark:text-slate-100">FocusFlow</p>

@@ -26,9 +26,13 @@ export const getNextAppRoute = (profile: UserProfile) => {
     return "/sign-in";
   }
 
-  if (!isProfileSetupComplete(profile)) return "/profile-setup";
-  if (!isSyllabusSetupComplete(profile)) return "/syllabus-setup";
-  if (!isScheduleSetupComplete(profile)) return "/schedule-setup";
+  if (
+    !isProfileSetupComplete(profile) ||
+    !isSyllabusSetupComplete(profile) ||
+    !isScheduleSetupComplete(profile)
+  ) {
+    return "/onboarding";
+  }
   
   return "/dashboard";
 };

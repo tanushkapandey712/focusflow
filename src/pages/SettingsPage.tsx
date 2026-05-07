@@ -1,303 +1,203 @@
-import { useEffect, useMemo, useState } from "react";
+import { useState } from "react";
 import { DashboardContainer } from "../components/dashboard/DashboardContainer";
-import { SubjectBadge } from "../components/subjects/SubjectBadge";
 import { Button, Card, SectionContainer } from "../components/ui";
 import { useFocusFlowData } from "../hooks/useFocusFlowData";
-import type { InstitutionType, UserProfile } from "../types/models";
-import {
-  getClassOrCourseLabel,
-  getInstitutionLabel,
-  getSavedInstitutionType,
-} from "../utils/profile";
-import { buildSubjectsFromNames, parseSubjectNames, subjectNamesToText } from "../utils/subjects";
+import { Palette, Clock, Activity, User, LogOut, Trash2 } from "lucide-react";
+import { cn } from "../lib/cn";
 
-const studyTypeOptions: Array<{ value: UserProfile["preferredMode"]; label: string }> = [
-  { value: "pomodoro", label: "Pomodoro" },
-  { value: "deep-work", label: "Deep Work" },
-  { value: "custom", label: "Custom" },
-];
+// Simple toggle switch component for settings
+const SettingToggle = ({ label, description, checked, onChange }: { label: string, description?: string, checked: boolean, onChange: (val: boolean) => void }) => (
+  <div className="flex items-center justify-between py-3">
+    <div>
+      <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{label}</p>
+      {description && <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{description}</p>}
+    </div>
+    <button 
+      type="button"
+      onClick={() => onChange(!checked)}
+      className={cn(
+        "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900",
+        checked ? "bg-brand-500" : "bg-slate-200 dark:bg-slate-700"
+      )}
+    >
+      <span className={cn(
+        "pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
+        checked ? "translate-x-5" : "translate-x-0"
+      )} />
+    </button>
+  </div>
+);
 
-const institutionTypeOptions: Array<{ value: InstitutionType; label: string }> = [
-  { value: "school", label: "School" },
-  { value: "college", label: "College" },
-];
+// Simple select component for settings
+const SettingSelect = ({ label, options, value, onChange }: { label: string, options: {label: string, value: string}[], value: string, onChange: (val: string) => void }) => (
+  <div className="flex items-center justify-between py-3">
+    <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{label}</p>
+    <select 
+      value={value} 
+      onChange={(e) => onChange(e.target.value)}
+      className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-brand-500 outline-none"
+    >
+      {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+    </select>
+  </div>
+);
 
 export const SettingsPage = () => {
-  const { profile, subjects, setProfile, setSubjects } = useFocusFlowData();
-  const initialSubjectsText = useMemo(() => subjectNamesToText(subjects), [subjects]);
+  const { profile, setProfile } = useFocusFlowData();
+
+  // Appearance
+  const [theme, setTheme] = useState("system");
+  const [calmMode, setCalmMode] = useState(true);
+  const [accentColor, setAccentColor] = useState("blue");
+
+  // Timer
+  const [defaultDuration, setDefaultDuration] = useState("25");
+  const [breakInterval, setBreakInterval] = useState("5");
+  const [autoStart, setAutoStart] = useState(false);
+
+  // Tracking
+  const [cameraTracking, setCameraTracking] = useState(true);
+  const [notifications, setNotifications] = useState(true);
+  const [focusDetection, setFocusDetection] = useState(true);
+
+  // Account
   const [name, setName] = useState(profile.name);
-  const [institutionType, setInstitutionType] = useState<InstitutionType>(getSavedInstitutionType(profile));
-  const [classOrCourse, setClassOrCourse] = useState(profile.classOrCourse ?? "");
-  const [institutionStartTime, setInstitutionStartTime] = useState(profile.institutionStartTime ?? "");
-  const [institutionEndTime, setInstitutionEndTime] = useState(profile.institutionEndTime ?? "");
-  const [studyType, setStudyType] = useState<UserProfile["preferredMode"]>(profile.preferredMode);
-  const [subjectsText, setSubjectsText] = useState(initialSubjectsText);
-  const [status, setStatus] = useState<"idle" | "saved">("idle");
-  const [error, setError] = useState("");
 
-  useEffect(() => {
-    setName(profile.name);
-    setInstitutionType(getSavedInstitutionType(profile));
-    setClassOrCourse(profile.classOrCourse ?? "");
-    setInstitutionStartTime(profile.institutionStartTime ?? "");
-    setInstitutionEndTime(profile.institutionEndTime ?? "");
-    setStudyType(profile.preferredMode);
-    setSubjectsText(initialSubjectsText);
-    setStatus("idle");
-    setError("");
-  }, [initialSubjectsText, profile]);
-
-  const parsedSubjectNames = useMemo(() => parseSubjectNames(subjectsText), [subjectsText]);
-  const previewSubjects = useMemo(
-    () => buildSubjectsFromNames(parsedSubjectNames, subjects),
-    [parsedSubjectNames, subjects],
-  );
-  const normalizedSubjectText = parsedSubjectNames.join("\n");
-  const normalizedInitialSubjectText = useMemo(
-    () => parseSubjectNames(initialSubjectsText).join("\n"),
-    [initialSubjectsText],
-  );
-  const trimmedName = name.trim();
-  const normalizedClassOrCourse = classOrCourse.trim();
-  const classOrCourseLabel = getClassOrCourseLabel(institutionType);
-  const institutionLabel = getInstitutionLabel(institutionType);
-  const verifiedDateLabel = profile.emailVerifiedAt
-    ? new Intl.DateTimeFormat(undefined, {
-        dateStyle: "medium",
-        timeStyle: "short",
-      }).format(new Date(profile.emailVerifiedAt))
-    : "Waiting for verification";
-  const isDirty =
-    trimmedName !== profile.name ||
-    institutionType !== getSavedInstitutionType(profile) ||
-    normalizedClassOrCourse !== (profile.classOrCourse ?? "") ||
-    institutionStartTime !== (profile.institutionStartTime ?? "") ||
-    institutionEndTime !== (profile.institutionEndTime ?? "") ||
-    studyType !== profile.preferredMode ||
-    normalizedSubjectText !== normalizedInitialSubjectText;
-
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
-    if (!trimmedName) {
-      setError("Enter your name before saving.");
-      setStatus("idle");
-      return;
-    }
-
-    if (!normalizedClassOrCourse) {
-      setError(`Enter your ${classOrCourseLabel.toLowerCase()} before saving.`);
-      setStatus("idle");
-      return;
-    }
-
-    if (!institutionStartTime || !institutionEndTime) {
-      setError(`Enter your ${institutionLabel.toLowerCase()} start and end times.`);
-      setStatus("idle");
-      return;
-    }
-
-    if (institutionStartTime === institutionEndTime) {
-      setError(`${institutionLabel} start and end times should be different.`);
-      setStatus("idle");
-      return;
-    }
-
-    if (previewSubjects.length === 0) {
-      setError("Add at least one subject to keep the timer and analytics useful.");
-      setStatus("idle");
-      return;
-    }
-
-
-
-    setProfile({
-      ...profile,
-      name: trimmedName,
-      preferredMode: studyType,
-      isAuthenticated: true,
-      hasCompletedProfileSetup: true,
-      institutionType,
-      classOrCourse: normalizedClassOrCourse,
-      institutionStartTime,
-      institutionEndTime,
-    });
-    setSubjects(previewSubjects);
-    setSubjectsText(subjectNamesToText(previewSubjects));
-    setError("");
-    setStatus("saved");
+  const handleSaveProfile = () => {
+    setProfile({ ...profile, name });
+    alert("Profile saved successfully.");
   };
 
   return (
-    <DashboardContainer className="max-w-3xl">
+    <DashboardContainer className="max-w-2xl">
       <SectionContainer
-        title="Profile & Settings"
-        description="Keep your profile, subjects, study timings, and goals aligned with how you actually study."
+        title="Settings"
+        description="Customize your workspace, tracking preferences, and account details."
       >
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <Card className="space-y-5 p-5 sm:p-6">
-            <div className="space-y-1">
-              <h3 className="text-xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">Profile</h3>
-              <p className="text-sm leading-6 text-slate-500 dark:text-slate-400">
-                Keep your study profile current while your verified email remains the sign-in identity for this device.
-              </p>
-            </div>
+        <div className="space-y-6">
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <label className="space-y-1.5">
-                <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Name</span>
-                <input
-                  value={name}
-                  onChange={(event) => {
-                    setName(event.target.value);
-                    setStatus("idle");
-                    setError("");
-                  }}
-                  placeholder="Student"
-                  className="field-surface"
-                />
-              </label>
-
-              <label className="space-y-1.5">
-                <span className="text-sm font-medium text-slate-700 dark:text-slate-200">School or college</span>
-                <select
-                  value={institutionType}
-                  onChange={(event) => {
-                    setInstitutionType(event.target.value as InstitutionType);
-                    setStatus("idle");
-                    setError("");
-                  }}
-                  className="field-surface"
-                >
-                  {institutionTypeOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="space-y-1.5">
-                <span className="text-sm font-medium text-slate-700 dark:text-slate-200">{classOrCourseLabel}</span>
-                <input
-                  value={classOrCourse}
-                  onChange={(event) => {
-                    setClassOrCourse(event.target.value);
-                    setStatus("idle");
-                    setError("");
-                  }}
-                  placeholder={institutionType === "college" ? "B.Tech CSE" : "Class 11 Science"}
-                  className="field-surface"
-                />
-              </label>
-
-              <label className="space-y-1.5">
-                <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Study type</span>
-                <select
-                  value={studyType}
-                  onChange={(event) => {
-                    setStudyType(event.target.value as UserProfile["preferredMode"]);
-                    setStatus("idle");
-                    setError("");
-                  }}
-                  className="field-surface"
-                >
-                  {studyTypeOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="space-y-1.5">
-                <span className="text-sm font-medium text-slate-700 dark:text-slate-200">{institutionLabel} start time</span>
-                <input
-                  type="time"
-                  value={institutionStartTime}
-                  onChange={(event) => {
-                    setInstitutionStartTime(event.target.value);
-                    setStatus("idle");
-                    setError("");
-                  }}
-                  className="field-surface"
-                />
-              </label>
-
-              <label className="space-y-1.5">
-                <span className="text-sm font-medium text-slate-700 dark:text-slate-200">{institutionLabel} end time</span>
-                <input
-                  type="time"
-                  value={institutionEndTime}
-                  onChange={(event) => {
-                    setInstitutionEndTime(event.target.value);
-                    setStatus("idle");
-                    setError("");
-                  }}
-                  className="field-surface"
-                />
-              </label>
-
-              <label className="space-y-1.5 sm:col-span-2">
-                <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Verified email</span>
-                <input value={profile.email ?? ""} readOnly className="field-surface cursor-not-allowed opacity-80" />
-              </label>
-
-              <div className="rounded-3xl border border-dashed border-slate-200 bg-slate-50/80 px-4 py-3 text-sm leading-6 text-slate-500 dark:border-white/10 dark:bg-slate-900/70 dark:text-slate-300 sm:col-span-2">
-                Verified on {verifiedDateLabel}. This email is currently used to sign in on this device.
-              </div>
-            </div>
-          </Card>
-
-          <Card className="space-y-5 p-5 sm:p-6">
-            <div className="space-y-1">
-              <h3 className="text-xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">Subjects</h3>
-              <p className="text-sm leading-6 text-slate-500 dark:text-slate-400">
-                Add one subject per line or use commas. The same list powers your timer, history, and analytics.
-              </p>
-            </div>
-
-            <label className="block space-y-1.5">
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Subject list</span>
-              <textarea
-                value={subjectsText}
-                onChange={(event) => {
-                  setSubjectsText(event.target.value);
-                  setStatus("idle");
-                  setError("");
-                }}
-                rows={5}
-                placeholder={"Mathematics\nPhysics\nEnglish"}
-                className="field-surface min-h-36 resize-y"
+          {/* 1. Appearance */}
+          <section>
+            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-3 flex items-center gap-2">
+              <Palette size={16} /> Appearance
+            </h3>
+            <Card className="p-4 sm:p-5 divide-y divide-slate-100 dark:divide-slate-800/60">
+              <SettingSelect 
+                label="Theme" 
+                options={[{label: "System", value: "system"}, {label: "Light", value: "light"}, {label: "Dark", value: "dark"}]}
+                value={theme}
+                onChange={setTheme}
               />
-            </label>
+              <SettingToggle 
+                label="Calm Mode" 
+                description="Reduces visual noise and aggressive UI animations."
+                checked={calmMode}
+                onChange={setCalmMode}
+              />
+              <SettingSelect 
+                label="Accent Color" 
+                options={[{label: "Soft Blue", value: "blue"}, {label: "Lavender", value: "purple"}, {label: "Mint", value: "green"}]}
+                value={accentColor}
+                onChange={setAccentColor}
+              />
+            </Card>
+          </section>
 
-            <div className="space-y-2">
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Preview</span>
-              <div className="flex min-h-16 flex-wrap gap-2 rounded-3xl border border-dashed border-slate-200 bg-slate-50/80 p-3 dark:border-white/10 dark:bg-slate-900/60">
-                {previewSubjects.length ? (
-                  previewSubjects.map((subject) => <SubjectBadge key={subject.id} subject={subject} />)
-                ) : (
-                  <p className="text-sm text-slate-500 dark:text-slate-400">Add at least one subject.</p>
-                )}
+          {/* 2. Timer Settings */}
+          <section>
+            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-3 flex items-center gap-2">
+              <Clock size={16} /> Timer Settings
+            </h3>
+            <Card className="p-4 sm:p-5 divide-y divide-slate-100 dark:divide-slate-800/60">
+              <SettingSelect 
+                label="Default Session Duration" 
+                options={[{label: "25 minutes", value: "25"}, {label: "45 minutes", value: "45"}, {label: "60 minutes", value: "60"}]}
+                value={defaultDuration}
+                onChange={setDefaultDuration}
+              />
+              <SettingSelect 
+                label="Default Break Duration" 
+                options={[{label: "5 minutes", value: "5"}, {label: "10 minutes", value: "10"}, {label: "15 minutes", value: "15"}]}
+                value={breakInterval}
+                onChange={setBreakInterval}
+              />
+              <SettingToggle 
+                label="Auto-start Breaks" 
+                description="Automatically start the break timer when a session ends."
+                checked={autoStart}
+                onChange={setAutoStart}
+              />
+            </Card>
+          </section>
+
+          {/* 3. Tracking */}
+          <section>
+            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-3 flex items-center gap-2">
+              <Activity size={16} /> Tracking
+            </h3>
+            <Card className="p-4 sm:p-5 divide-y divide-slate-100 dark:divide-slate-800/60">
+              <SettingToggle 
+                label="Camera Distraction Tracking" 
+                description="Use your webcam to track physical distractions."
+                checked={cameraTracking}
+                onChange={setCameraTracking}
+              />
+              <SettingToggle 
+                label="Smart Focus Detection" 
+                description="Detect tab switches and mouse inactivity."
+                checked={focusDetection}
+                onChange={setFocusDetection}
+              />
+              <SettingToggle 
+                label="Session Notifications" 
+                description="Get notified when it's time to start or take a break."
+                checked={notifications}
+                onChange={setNotifications}
+              />
+            </Card>
+          </section>
+
+          {/* 4. Account */}
+          <section>
+            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-3 flex items-center gap-2">
+              <User size={16} /> Account
+            </h3>
+            <Card className="p-4 sm:p-5">
+              <div className="space-y-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Display Name</label>
+                  <div className="flex gap-2">
+                    <input
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      className="flex-1 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-brand-500 outline-none"
+                    />
+                    <Button onClick={handleSaveProfile} disabled={name === profile.name} className="px-4">Save</Button>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1.5 pt-4 border-t border-slate-100 dark:border-slate-800/60">
+                  <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Email Address</label>
+                  <input
+                    value={profile.email ?? "Not provided"}
+                    disabled
+                    className="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-sm text-slate-500 cursor-not-allowed opacity-70"
+                  />
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-3 pt-6">
+                  <Button variant="secondary" className="flex-1 text-slate-600 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 border-transparent">
+                    <LogOut size={16} className="mr-2" /> Sign Out
+                  </Button>
+                  <Button variant="secondary" className="flex-1 text-rose-600 bg-rose-50 hover:bg-rose-100 dark:bg-rose-500/10 dark:text-rose-400 dark:hover:bg-rose-500/20 border-transparent">
+                    <Trash2 size={16} className="mr-2" /> Delete Account
+                  </Button>
+                </div>
               </div>
-            </div>
-          </Card>
+            </Card>
+          </section>
 
-
-
-          <Card className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
-            <div className="space-y-1">
-              <p className="text-sm leading-6 text-slate-500 dark:text-slate-400">
-                {status === "saved" ? "Saved locally." : "Changes stay on this device."}
-              </p>
-              {error ? <p className="text-sm text-rose-600 dark:text-rose-300">{error}</p> : null}
-            </div>
-            <Button type="submit" disabled={!isDirty} className="sm:min-w-32">
-              Save Settings
-            </Button>
-          </Card>
-        </form>
+        </div>
       </SectionContainer>
     </DashboardContainer>
   );

@@ -9,23 +9,26 @@ import { GoalsPage } from "../pages/GoalsPage";
 import { MilestonesPage } from "../pages/MilestonesPage";
 import { LandingPage } from "../pages/LandingPage";
 import { PlannerPage } from "../pages/PlannerPage";
-import { ProfileSetupPage } from "../pages/ProfileSetupPage";
-import { ScheduleSetupPage } from "../pages/ScheduleSetupPage";
+import { OnboardingPage } from "../pages/OnboardingPage";
 import { SessionHistoryPage } from "../pages/SessionHistoryPage";
 import { SettingsPage } from "../pages/SettingsPage";
 import { SignInPage } from "../pages/SignInPage";
 import { SubjectSyllabusDetailPage } from "../pages/SubjectSyllabusDetailPage";
 import { SyllabusHubPage } from "../pages/SyllabusHubPage";
-import { SyllabusSetupPage } from "../pages/SyllabusSetupPage";
 import { TimerPage } from "../pages/TimerPage";
 
 export const AppRouter = () => (
   <Routes>
     <Route path="/" element={<LandingPage />} />
     <Route path="/sign-in" element={<SignInPage />} />
-    <Route path="/profile-setup" element={<ProfileSetupPage />} />
-    <Route path="/syllabus-setup" element={<SyllabusSetupPage />} />
-    <Route path="/schedule-setup" element={<ScheduleSetupPage />} />
+    
+    <Route path="/onboarding" element={<OnboardingPage />} />
+    
+    {/* Legacy redirects */}
+    <Route path="/profile-setup" element={<Navigate to="/onboarding" replace />} />
+    <Route path="/syllabus-setup" element={<Navigate to="/onboarding" replace />} />
+    <Route path="/schedule-setup" element={<Navigate to="/onboarding" replace />} />
+
     <Route element={<RequireSignedIn />}>
       <Route
         element={

@@ -39,7 +39,9 @@ export interface UserProfile {
   email?: string;
   emailVerifiedAt?: string;
   institutionType?: InstitutionType;
+  institutionName?: string;
   classOrCourse?: string;
+  fieldOfStudy?: string;
   institutionStartTime?: string;
   institutionEndTime?: string;
   hasCompletedScheduleSetup: boolean;
@@ -67,6 +69,7 @@ export interface TimetableSession {
 export interface StudyGoal {
   id: string;
   title: string;
+  type?: "academic" | "habit" | "milestone";
   targetMinutes: number;
   completedMinutes: number;
   dueDate?: string;
