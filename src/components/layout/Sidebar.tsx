@@ -1,4 +1,4 @@
-import { Award, BarChart3, BookOpenText, CalendarDays, Clock3, LayoutDashboard, ListChecks, Settings2, Sparkles, Target } from "lucide-react";
+import { Award, BarChart3, BookOpenText, CalendarDays, Clock3, LayoutDashboard, ListChecks, Settings2, Target } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { cn } from "../../lib/cn";
 import { useFocusFlowData } from "../../hooks/useFocusFlowData";
@@ -101,6 +101,13 @@ export const Sidebar = ({ isOpen }: { isOpen?: boolean }) => {
               <p className="truncate text-xs text-slate-400">{profile.email ?? "View profile"}</p>
             </div>
           </NavLink>
+        </div>
+
+        {/* Footer Links */}
+        <div className="mt-4 flex justify-center gap-4 text-[10px] font-medium text-slate-400">
+          <NavLink to="/privacy" className="hover:text-slate-600 dark:hover:text-slate-300 transition-colors">Privacy Policy</NavLink>
+          <span>•</span>
+          <NavLink to="/terms" className="hover:text-slate-600 dark:hover:text-slate-300 transition-colors">Terms of Use</NavLink>
         </div>
       </div>
       </div>

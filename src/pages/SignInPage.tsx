@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ArrowRight, Mail, Sparkles } from "lucide-react";
+import { ArrowRight, Mail } from "lucide-react";
 import { Navigate, Link, useNavigate } from "react-router-dom";
 import { Button } from "../components/ui";
 import { useFocusFlowData } from "../hooks/useFocusFlowData";
@@ -235,6 +235,12 @@ export const SignInPage = () => {
             </div>
             
           </div>
+        </div>
+        
+        {/* Footer Links */}
+        <div className="mt-8 flex justify-center gap-6 text-sm text-slate-500 dark:text-slate-400">
+          <Link to="/privacy" className="hover:text-slate-900 dark:hover:text-white transition-colors">Privacy Policy</Link>
+          <Link to="/terms" className="hover:text-slate-900 dark:hover:text-white transition-colors">Terms of Use</Link>
         </div>
       </div>
     </div>

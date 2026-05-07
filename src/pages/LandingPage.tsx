@@ -239,10 +239,9 @@ export const LandingPage = () => {
             <span className="font-semibold">FocusFlow</span>
           </div>
           <div className="flex gap-8 text-sm font-medium text-slate-500 dark:text-slate-400">
-            <a href="#" className="hover:text-slate-900 dark:hover:text-white transition-colors">About</a>
-            <a href="#" className="hover:text-slate-900 dark:hover:text-white transition-colors">Privacy</a>
+            <Link to="/privacy" className="hover:text-slate-900 dark:hover:text-white transition-colors">Privacy Policy</Link>
+            <Link to="/terms" className="hover:text-slate-900 dark:hover:text-white transition-colors">Terms of Use</Link>
             <a href="https://github.com" className="hover:text-slate-900 dark:hover:text-white transition-colors">GitHub</a>
-            <a href="#" className="hover:text-slate-900 dark:hover:text-white transition-colors">Contact</a>
           </div>
           <div className="text-sm text-slate-400">
             © {new Date().getFullYear()} FocusFlow. All rights reserved.
