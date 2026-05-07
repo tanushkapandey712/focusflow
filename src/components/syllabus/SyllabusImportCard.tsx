@@ -263,7 +263,7 @@ export const SyllabusImportCard = ({ subjects, onSaveImport }: SyllabusImportCar
 
             {usesNewSubject ? (
               <label className="space-y-1.5">
-                <span className="text-sm font-medium text-slate-700 dark:text-slate-200">New subject name</span>
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-200">New subject name <span className="text-rose-500" aria-hidden="true">*</span></span>
                 <input
                   value={newSubjectName}
                   onChange={(event) => {
@@ -271,7 +271,9 @@ export const SyllabusImportCard = ({ subjects, onSaveImport }: SyllabusImportCar
                     setError("");
                   }}
                   placeholder="Physics"
-                  className="field-surface"
+                  aria-required="true"
+                  aria-invalid={!!error && !newSubjectName.trim()}
+                  className={`field-surface ${error && !newSubjectName.trim() ? "ring-2 ring-rose-400/40 border-rose-400 dark:ring-rose-500/40 dark:border-rose-500" : ""}`}
                 />
               </label>
             ) : null}

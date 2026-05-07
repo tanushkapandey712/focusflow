@@ -1,4 +1,10 @@
 {
+  "rewrites": [
+    {
+      "source": "/((?!sitemap.xml|robots.txt|google.*\\.html).*)",
+      "destination": "/index.html"
+    }
+  ],
   "headers": [
     {
       "source": "/sitemap.xml",

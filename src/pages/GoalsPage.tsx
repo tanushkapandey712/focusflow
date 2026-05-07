@@ -31,13 +31,18 @@ const GoalSection = ({
 }) => {
   const [isAdding, setIsAdding] = useState(false);
   const [newTitle, setNewTitle] = useState("");
+  const [addError, setAddError] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
 
   const handleAdd = () => {
-    if (!newTitle.trim()) return;
+    if (!newTitle.trim()) {
+      setAddError("Goal title is required.");
+      return;
+    }
     onAddGoal(newTitle.trim(), 120, type); // Default to 120 min or arbitrary target
     setNewTitle("");
+    setAddError("");
     setIsAdding(false);
   };
 
@@ -139,16 +144,24 @@ const GoalSection = ({
         {isAdding && (
           <div className="p-4 rounded-2xl border border-brand-200 bg-brand-50/50 dark:border-brand-500/20 dark:bg-brand-500/5 animate-fade-up">
             <div className="flex flex-col gap-3">
-              <input
-                autoFocus
-                value={newTitle}
-                onChange={(e) => setNewTitle(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleAdd()}
-                placeholder={`e.g. ${type === 'academic' ? 'Finish Math-II before June' : type === 'habit' ? 'Study 3 hours/day' : 'Finish Unit 2'}`}
-                className="w-full bg-white dark:bg-slate-900 border-none rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-brand-500 outline-none shadow-sm"
-              />
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                  Goal title <span className="text-rose-500" aria-hidden="true">*</span>
+                </label>
+                <input
+                  autoFocus
+                  value={newTitle}
+                  onChange={(e) => { setNewTitle(e.target.value); setAddError(""); }}
+                  onKeyDown={(e) => e.key === "Enter" && handleAdd()}
+                  placeholder={`e.g. ${type === 'academic' ? 'Finish Math-II before June' : type === 'habit' ? 'Study 3 hours/day' : 'Finish Unit 2'}`}
+                  aria-required="true"
+                  aria-invalid={!!addError}
+                  className={`w-full bg-white dark:bg-slate-900 border rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-brand-500 outline-none shadow-sm ${addError ? "border-rose-400 dark:border-rose-500" : "border-transparent"}`}
+                />
+                {addError && <p className="text-xs text-rose-500">{addError}</p>}
+              </div>
               <div className="flex justify-end gap-2">
-                <Button variant="secondary" onClick={() => setIsAdding(false)} className="h-9 px-4 rounded-xl text-xs">Cancel</Button>
+                <Button variant="secondary" onClick={() => { setIsAdding(false); setAddError(""); }} className="h-9 px-4 rounded-xl text-xs">Cancel</Button>
                 <Button onClick={handleAdd} className="h-9 px-4 rounded-xl text-xs">Save Goal</Button>
               </div>
             </div>

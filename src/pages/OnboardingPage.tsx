@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { ArrowRight, ArrowLeft, Check, Sparkles, Plus, Trash2, Clock, Brain, Target, BookOpen } from "lucide-react";
 import { useFocusFlowData } from "../hooks/useFocusFlowData";
 import { Button, Card } from "../components/ui";
+import { RequiredMark } from "../components/ui/RequiredMark";
 import { buildSubjectsFromNames } from "../utils/subjects";
 
 const TOTAL_STEPS = 6;
@@ -50,7 +51,18 @@ export const OnboardingPage = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [step]);
 
+  const [stepError, setStepError] = useState("");
+
   const handleNext = () => {
+    setStepError("");
+    if (step === 1 && !name.trim()) {
+      setStepError("Name is required to continue.");
+      return;
+    }
+    if (step === 2 && !classOrCourse.trim()) {
+      setStepError("Class or course is required.");
+      return;
+    }
     if (step < TOTAL_STEPS) setStep(step + 1);
   };
 
@@ -116,17 +128,25 @@ export const OnboardingPage = () => {
             <p className="text-slate-600 dark:text-slate-400">
               Let's make this workspace yours.
             </p>
-            <input
-              type="text"
-              autoFocus
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && name.trim()) handleNext();
-              }}
-              placeholder="e.g. Alex"
-              className="h-14 w-full rounded-2xl border-2 border-slate-200 bg-white/50 px-6 text-lg outline-none transition-all focus:border-brand-500 focus:bg-white dark:border-slate-700 dark:bg-slate-800/50 dark:focus:border-brand-400"
-            />
+            <div className="space-y-1.5">
+              <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                Your name <RequiredMark />
+              </label>
+              <input
+                type="text"
+                autoFocus
+                value={name}
+                onChange={(e) => { setName(e.target.value); setStepError(""); }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && name.trim()) handleNext();
+                }}
+                placeholder="e.g. Alex"
+                aria-required="true"
+                aria-invalid={!!stepError}
+                className={`h-14 w-full rounded-2xl border-2 bg-white/50 px-6 text-lg outline-none transition-all focus:border-brand-500 focus:bg-white dark:bg-slate-800/50 dark:focus:border-brand-400 ${stepError ? "border-rose-400 dark:border-rose-500" : "border-slate-200 dark:border-slate-700"}`}
+              />
+              {stepError && <p className="text-sm text-rose-500 mt-1">{stepError}</p>}
+            </div>
             <Button
               className="w-full h-14 rounded-full mt-8"
               onClick={handleNext}
@@ -162,30 +182,49 @@ export const OnboardingPage = () => {
             </div>
 
             <div className="space-y-4 pt-4">
-              <input
-                type="text"
-                value={institutionName}
-                onChange={(e) => setInstitutionName(e.target.value)}
-                placeholder={institutionType === "school" ? "School Name" : "College/University Name"}
-                className="h-14 w-full rounded-2xl border-2 border-slate-200 bg-white/50 px-6 text-lg outline-none transition-all focus:border-brand-500 focus:bg-white dark:border-slate-700 dark:bg-slate-800/50 dark:focus:border-brand-400"
-              />
-              <input
-                type="text"
-                value={classOrCourse}
-                onChange={(e) => setClassOrCourse(e.target.value)}
-                placeholder={institutionType === "school" ? "Class / Grade (e.g. 12th)" : "Course (e.g. B.Tech CS)"}
-                className="h-14 w-full rounded-2xl border-2 border-slate-200 bg-white/50 px-6 text-lg outline-none transition-all focus:border-brand-500 focus:bg-white dark:border-slate-700 dark:bg-slate-800/50 dark:focus:border-brand-400"
-              />
-              {institutionType === "college" && (
+              <div className="space-y-1.5">
+                <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                  {institutionType === "school" ? "School Name" : "College/University Name"}
+                </label>
                 <input
                   type="text"
-                  value={fieldOfStudy}
-                  onChange={(e) => setFieldOfStudy(e.target.value)}
-                  placeholder="Field / Major (Optional)"
+                  value={institutionName}
+                  onChange={(e) => setInstitutionName(e.target.value)}
+                  placeholder={institutionType === "school" ? "School Name" : "College/University Name"}
                   className="h-14 w-full rounded-2xl border-2 border-slate-200 bg-white/50 px-6 text-lg outline-none transition-all focus:border-brand-500 focus:bg-white dark:border-slate-700 dark:bg-slate-800/50 dark:focus:border-brand-400"
                 />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                  {institutionType === "school" ? "Class / Grade" : "Course"} <RequiredMark />
+                </label>
+                <input
+                  type="text"
+                  value={classOrCourse}
+                  onChange={(e) => { setClassOrCourse(e.target.value); setStepError(""); }}
+                  placeholder={institutionType === "school" ? "e.g. 12th" : "e.g. B.Tech CS"}
+                  aria-required="true"
+                  aria-invalid={!!stepError && !classOrCourse.trim()}
+                  className={`h-14 w-full rounded-2xl border-2 bg-white/50 px-6 text-lg outline-none transition-all focus:border-brand-500 focus:bg-white dark:bg-slate-800/50 dark:focus:border-brand-400 ${stepError && !classOrCourse.trim() ? "border-rose-400 dark:border-rose-500" : "border-slate-200 dark:border-slate-700"}`}
+                />
+              </div>
+              {institutionType === "college" && (
+                <div className="space-y-1.5">
+                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                    Field / Major <span className="text-slate-400 font-normal">(Optional)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={fieldOfStudy}
+                    onChange={(e) => setFieldOfStudy(e.target.value)}
+                    placeholder="Field / Major (Optional)"
+                    className="h-14 w-full rounded-2xl border-2 border-slate-200 bg-white/50 px-6 text-lg outline-none transition-all focus:border-brand-500 focus:bg-white dark:border-slate-700 dark:bg-slate-800/50 dark:focus:border-brand-400"
+                  />
+                </div>
               )}
             </div>
+
+            {stepError && <p className="text-sm text-rose-500">{stepError}</p>}
 
             <Button className="w-full h-14 rounded-full mt-8" onClick={handleNext}>
               Continue <ArrowRight size={18} className="ml-2" />

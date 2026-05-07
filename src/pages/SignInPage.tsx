@@ -193,7 +193,9 @@ export const SignInPage = () => {
                     setError("");
                   }}
                   placeholder="student@example.com"
-                  className="h-12 w-full rounded-full border border-slate-200 bg-white/50 pl-11 pr-4 text-sm outline-none transition-all focus:border-brand-500 focus:bg-white focus:ring-4 focus:ring-brand-500/10 dark:border-slate-700 dark:bg-slate-800/50 dark:focus:border-brand-400 dark:focus:bg-slate-800"
+                  aria-required="true"
+                  aria-invalid={!!error}
+                  className={`h-12 w-full rounded-full border bg-white/50 pl-11 pr-4 text-sm outline-none transition-all focus:border-brand-500 focus:bg-white focus:ring-4 focus:ring-brand-500/10 dark:bg-slate-800/50 dark:focus:border-brand-400 dark:focus:bg-slate-800 ${error ? "border-rose-400 dark:border-rose-500" : "border-slate-200 dark:border-slate-700"}`}
                 />
               </div>
 

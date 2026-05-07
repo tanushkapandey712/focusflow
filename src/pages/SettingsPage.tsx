@@ -63,9 +63,15 @@ export const SettingsPage = () => {
   // Account
   const [name, setName] = useState(profile.name);
 
+  const [nameError, setNameError] = useState("");
+
   const handleSaveProfile = () => {
-    setProfile({ ...profile, name });
-    alert("Profile saved successfully.");
+    if (!name.trim()) {
+      setNameError("Display name is required.");
+      return;
+    }
+    setProfile({ ...profile, name: name.trim() });
+    setNameError("");
   };
 
   return (
@@ -165,15 +171,18 @@ export const SettingsPage = () => {
             <Card className="p-4 sm:p-5">
               <div className="space-y-4">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Display Name</label>
+                  <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Display Name <span className="text-rose-500" aria-hidden="true">*</span></label>
                   <div className="flex gap-2">
                     <input
                       value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      className="flex-1 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-brand-500 outline-none"
+                      onChange={(e) => { setName(e.target.value); setNameError(""); }}
+                      aria-required="true"
+                      aria-invalid={!!nameError}
+                      className={`flex-1 bg-slate-50 dark:bg-slate-900/50 border rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-brand-500 outline-none ${nameError ? "border-rose-400 dark:border-rose-500" : "border-slate-200 dark:border-slate-800"}`}
                     />
-                    <Button onClick={handleSaveProfile} disabled={name === profile.name} className="px-4">Save</Button>
+                    <Button onClick={handleSaveProfile} disabled={name === profile.name || !name.trim()} className="px-4">Save</Button>
                   </div>
+                  {nameError && <p className="text-xs text-rose-500">{nameError}</p>}
                 </div>
 
                 <div className="flex flex-col gap-1.5 pt-4 border-t border-slate-100 dark:border-slate-800/60">

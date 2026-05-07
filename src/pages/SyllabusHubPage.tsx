@@ -82,6 +82,9 @@ export const SyllabusHubPage = () => {
             </div>
 
             <div className="w-full max-w-md space-y-2">
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                Subject name <span className="text-rose-500" aria-hidden="true">*</span>
+              </label>
               <div className="flex flex-col gap-2 sm:flex-row">
                 <input
                   value={newSubjectName}
@@ -90,7 +93,9 @@ export const SyllabusHubPage = () => {
                     setError("");
                   }}
                   placeholder="Add a new subject"
-                  className="field-surface"
+                  aria-required="true"
+                  aria-invalid={!!error}
+                  className={`field-surface ${error ? "ring-2 ring-rose-400/40 border-rose-400 dark:ring-rose-500/40 dark:border-rose-500" : ""}`}
                 />
                 <Button onClick={handleAddSubject} className="sm:min-w-36">
                   <Plus size={15} />

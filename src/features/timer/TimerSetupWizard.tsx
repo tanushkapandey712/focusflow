@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import type { Subject, SyllabusTopic, SyllabusUnit } from "../../types/models";
 import { Button } from "../../components/ui";
+import { RequiredMark } from "../../components/ui/RequiredMark";
 import { cn } from "../../lib/cn";
 import { getTopicProgressLabel, getTopicStatusTone } from "../../utils/syllabus";
 
@@ -187,7 +188,7 @@ export const TimerSetupWizard = ({
       children: (
         <>
           <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-            Subject
+            Subject <RequiredMark />
           </label>
           <select
             value={selectedSubjectId}
@@ -230,7 +231,7 @@ export const TimerSetupWizard = ({
       children: (
         <>
           <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-            Unit
+            Unit <RequiredMark />
           </label>
           <select
             value={selectedUnitId}
@@ -274,7 +275,7 @@ export const TimerSetupWizard = ({
       children: (
         <>
           <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-            Topic
+            Topic <RequiredMark />
           </label>
           <select
             value={selectedTopicId}
@@ -330,7 +331,7 @@ export const TimerSetupWizard = ({
       children: (
         <>
           <label className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-            Goal
+            Session Goal <RequiredMark />
           </label>
           <input
             value={goal}
