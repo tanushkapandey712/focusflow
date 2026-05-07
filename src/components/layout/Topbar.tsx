@@ -1,15 +1,14 @@
-import { Bell, Menu, Moon, Sun } from "lucide-react";
+import { Bell, Moon, Sun } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { Button } from "../ui/Button";
 
 interface TopbarProps {
   darkMode: boolean;
   toggleDarkMode: () => void;
-  toggleSidebar?: () => void;
 }
 
-export const Topbar = ({ darkMode, toggleDarkMode, toggleSidebar }: TopbarProps) => (
-  <TopbarContent darkMode={darkMode} toggleDarkMode={toggleDarkMode} toggleSidebar={toggleSidebar} />
+export const Topbar = ({ darkMode, toggleDarkMode }: TopbarProps) => (
+  <TopbarContent darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
 );
 
 const routeMeta: Record<string, { title: string; emoji: string }> = {
@@ -24,7 +23,7 @@ const routeMeta: Record<string, { title: string; emoji: string }> = {
   "/milestones":{ title: "Milestones",     emoji: "🏆" },
 };
 
-const TopbarContent = ({ darkMode, toggleDarkMode, toggleSidebar }: TopbarProps) => {
+const TopbarContent = ({ darkMode, toggleDarkMode }: TopbarProps) => {
   const { pathname } = useLocation();
   const meta = pathname.startsWith("/syllabus/")
     ? { title: "Subject Detail", emoji: "📖" }
