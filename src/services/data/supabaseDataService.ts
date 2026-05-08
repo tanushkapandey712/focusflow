@@ -193,6 +193,14 @@ const toAppSubject = (row: DbSubject, units: DbUnit[], topics: DbTopic[]): Subje
   };
 };
 
+const toAppSubjectWithUnits = (row: DbSubject, syllabusUnits: SyllabusUnit[]): Subject => ({
+  id: row.id,
+  name: row.name,
+  color: row.color,
+  examDate: row.exam_date || undefined,
+  syllabusUnits,
+});
+
 export const fetchSubjects = async (userId: string): Promise<Subject[]> => {
   const [subjectsRes, unitsRes, topicsRes] = await Promise.all([
     sb().from("subjects").select("*").eq("user_id", userId),
@@ -205,6 +213,75 @@ export const fetchSubjects = async (userId: string): Promise<Subject[]> => {
   const topics = throwOnError(topicsRes) as DbTopic[];
 
   return subjects.map((s) => toAppSubject(s, units, topics));
+};
+
+export const createUnitsWithTopics = async (
+  userId: string,
+  subjectId: string,
+  units: SyllabusUnit[],
+  startOrderIndex = 0,
+): Promise<SyllabusUnit[]> => {
+  if (units.length === 0) {
+    return [];
+  }
+
+  const updatedAt = new Date().toISOString();
+  const unitRows = units.map((unit, unitIndex) => ({
+    ...(isUuid(unit.id) ? { id: unit.id } : {}),
+    user_id: userId,
+    subject_id: subjectId,
+    title: unit.title,
+    order_index: startOrderIndex + unitIndex,
+    updated_at: updatedAt,
+  }));
+  let createdUnits: DbUnit[] = [];
+
+  try {
+    createdUnits = (
+      throwOnError(await sb().from("units").insert(unitRows).select("*")) as DbUnit[]
+    ).sort((a, b) => a.order_index - b.order_index);
+
+    const topicRows = createdUnits.flatMap((createdUnit, unitIndex) => {
+      const sourceUnit = units[unitIndex];
+
+      return sourceUnit.topics.map((topic, topicIndex) => ({
+        ...(isUuid(topic.id) ? { id: topic.id } : {}),
+        user_id: userId,
+        unit_id: createdUnit.id,
+        title: topic.title,
+        status: "not_started",
+        studied_minutes: 0,
+        study_sessions_count: 0,
+        last_studied_at: null,
+        order_index: topicIndex,
+        updated_at: updatedAt,
+      }));
+    });
+
+    const createdTopics =
+      topicRows.length > 0
+        ? (throwOnError(await sb().from("topics").insert(topicRows).select("*")) as DbTopic[])
+        : [];
+
+    return createdUnits.map((unit) => toAppUnit(unit, createdTopics));
+  } catch (error) {
+    if (createdUnits.length > 0) {
+      const rollbackResult = await sb()
+        .from("units")
+        .delete()
+        .eq("user_id", userId)
+        .in(
+          "id",
+          createdUnits.map((unit) => unit.id),
+        );
+
+      if (rollbackResult.error) {
+        console.error("[FocusFlow] Failed to rollback parsed syllabus units:", rollbackResult.error);
+      }
+    }
+
+    throw error instanceof Error ? error : new Error("Failed to save parsed syllabus.");
+  }
 };
 
 export const createSubject = async (userId: string, subject: Subject): Promise<Subject> => {
@@ -227,54 +304,8 @@ export const createSubject = async (userId: string, subject: Subject): Promise<S
         .single(),
     ) as DbSubject;
 
-    const createdUnits: DbUnit[] = [];
-    const createdTopics: DbTopic[] = [];
-
-    for (let ui = 0; ui < subject.syllabusUnits.length; ui++) {
-      const unit = subject.syllabusUnits[ui];
-      const createdUnit = throwOnError(
-        await sb()
-          .from("units")
-          .insert({
-            ...(isUuid(unit.id) ? { id: unit.id } : {}),
-            user_id: userId,
-            subject_id: createdSubject.id,
-            title: unit.title,
-            order_index: ui,
-            updated_at: updatedAt,
-          })
-          .select("*")
-          .single(),
-      ) as DbUnit;
-
-      createdUnits.push(createdUnit);
-
-      for (let ti = 0; ti < unit.topics.length; ti++) {
-        const topic = unit.topics[ti];
-        const createdTopic = throwOnError(
-          await sb()
-            .from("topics")
-            .insert({
-              ...(isUuid(topic.id) ? { id: topic.id } : {}),
-              user_id: userId,
-              unit_id: createdUnit.id,
-              title: topic.title,
-              status: topic.status,
-              studied_minutes: topic.studiedMinutes || 0,
-              study_sessions_count: topic.studySessionsCount || 0,
-              last_studied_at: topic.lastStudiedAt || null,
-              order_index: ti,
-              updated_at: updatedAt,
-            })
-            .select("*")
-            .single(),
-        ) as DbTopic;
-
-        createdTopics.push(createdTopic);
-      }
-    }
-
-    return toAppSubject(createdSubject, createdUnits, createdTopics);
+    const createdUnits = await createUnitsWithTopics(userId, createdSubject.id, subject.syllabusUnits);
+    return toAppSubjectWithUnits(createdSubject, createdUnits);
   } catch (error) {
     if (createdSubject) {
       const rollbackResult = await sb()
@@ -290,6 +321,98 @@ export const createSubject = async (userId: string, subject: Subject): Promise<S
 
     throw error instanceof Error ? error : new Error("Failed to create subject.");
   }
+};
+
+export const createUnit = async (
+  userId: string,
+  subjectId: string,
+  unit: SyllabusUnit,
+  orderIndex: number,
+): Promise<SyllabusUnit> => {
+  const updatedAt = new Date().toISOString();
+  let createdUnit: DbUnit | null = null;
+
+  try {
+    createdUnit = throwOnError(
+      await sb()
+        .from("units")
+        .insert({
+          ...(isUuid(unit.id) ? { id: unit.id } : {}),
+          user_id: userId,
+          subject_id: subjectId,
+          title: unit.title,
+          order_index: orderIndex,
+          updated_at: updatedAt,
+        })
+        .select("*")
+        .single(),
+    ) as DbUnit;
+
+    if (unit.topics.length === 0) {
+      return toAppUnit(createdUnit, []);
+    }
+
+    const topicRows = unit.topics.map((topic, topicIndex) => ({
+      ...(isUuid(topic.id) ? { id: topic.id } : {}),
+      user_id: userId,
+      unit_id: createdUnit!.id,
+      title: topic.title,
+      status: topic.status,
+      studied_minutes: topic.studiedMinutes || 0,
+      study_sessions_count: topic.studySessionsCount || 0,
+      last_studied_at: topic.lastStudiedAt || null,
+      order_index: topicIndex,
+      updated_at: updatedAt,
+    }));
+
+    const createdTopics = throwOnError(
+      await sb().from("topics").insert(topicRows).select("*"),
+    ) as DbTopic[];
+
+    return toAppUnit(createdUnit, createdTopics);
+  } catch (error) {
+    if (createdUnit) {
+      const rollbackResult = await sb()
+        .from("units")
+        .delete()
+        .eq("id", createdUnit.id)
+        .eq("user_id", userId);
+
+      if (rollbackResult.error) {
+        console.error("[FocusFlow] Failed to rollback unit after create error:", rollbackResult.error);
+      }
+    }
+
+    throw error instanceof Error ? error : new Error("Failed to create unit.");
+  }
+};
+
+export const createTopic = async (
+  userId: string,
+  unitId: string,
+  topic: SyllabusTopic,
+  orderIndex: number,
+): Promise<SyllabusTopic> => {
+  const createdTopic = throwOnError(
+    await sb()
+      .from("topics")
+      .insert({
+        ...(isUuid(topic.id) ? { id: topic.id } : {}),
+        user_id: userId,
+        unit_id: unitId,
+        title: topic.title,
+        status: "not_started",
+        studied_minutes: 0,
+        study_sessions_count: 0,
+        last_studied_at: null,
+        order_index: orderIndex,
+        updated_at: new Date().toISOString(),
+      })
+      .select("*")
+      .single(),
+  ) as DbTopic;
+
+  return toAppTopic(createdTopic);
 };
 
 export const updateSubject = async (

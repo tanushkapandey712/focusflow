@@ -20,6 +20,7 @@ import type {
   StudyGoal,
   StudySession,
   Subject,
+  SyllabusTopic,
   SyllabusUnit,
   UserProfile,
 } from "../types/models";
@@ -42,6 +43,12 @@ interface FocusFlowDataValue {
   addSession: (session: StudySession) => void;
   updateSession: (sessionId: string, patch: Partial<StudySession>) => void;
   addSubject: (subject: Subject) => Promise<Subject>;
+  addUnitToSubject: (subjectId: string, unit: SyllabusUnit) => Promise<SyllabusUnit>;
+  addTopicToUnit: (
+    subjectId: string,
+    unitId: string,
+    topic: SyllabusTopic,
+  ) => Promise<SyllabusTopic>;
   updateSubject: (subjectId: string, patch: Partial<Subject>) => void;
   deleteSubject: (subjectId: string) => void;
   saveReviewedSyllabus: (params: SaveReviewedSyllabusParams) => Promise<void>;
@@ -301,6 +308,130 @@ export const FocusFlowDataProvider = ({ children }: PropsWithChildren) => {
     [authUserId, syncToCloud],
   );
 
+  const addUnitToSubject = useCallback(
+    async (subjectId: string, unit: SyllabusUnit) => {
+      const subject = subjects.find((item) => item.id === subjectId);
+
+      if (!subject) {
+        throw new Error("Subject not found.");
+      }
+
+      const sessionUserId = await getSessionUserId();
+
+      if (sessionUserId) {
+        try {
+          const createdUnit = await supabaseService.createUnit(
+            sessionUserId,
+            subjectId,
+            unit,
+            subject.syllabusUnits.length,
+          );
+
+          setAuthUserId(sessionUserId);
+          setSyncError(null);
+          setSubjectsState((prev) =>
+            prev.map((item) =>
+              item.id === subjectId
+                ? { ...item, syllabusUnits: [...item.syllabusUnits, createdUnit] }
+                : item,
+            ),
+          );
+
+          return createdUnit;
+        } catch (err) {
+          const message = err instanceof Error ? err.message : "Failed to create unit in Supabase.";
+          console.error("[FocusFlow] Unit create failed:", err);
+          setSyncError(message);
+          throw err instanceof Error ? err : new Error(message);
+        }
+      }
+
+      const isGuestMode = !profile.email || profile.email === "guest@focusflow.app";
+      if (!isSupabaseConfigured || isGuestMode) {
+        const nextUnits = [...subject.syllabusUnits, unit];
+        setSyncError(null);
+        setSubjectsState((prev) =>
+          prev.map((item) => (item.id === subjectId ? { ...item, syllabusUnits: nextUnits } : item)),
+        );
+        localDataSource.updateSubject(subjectId, { syllabusUnits: nextUnits });
+        return unit;
+      }
+
+      const authError = new Error("User not signed in.");
+      console.error("[FocusFlow] Unit create blocked: no Supabase session found.");
+      setSyncError(authError.message);
+      throw authError;
+    },
+    [getSessionUserId, profile.email, subjects],
+  );
+
+  const addTopicToUnit = useCallback(
+    async (subjectId: string, unitId: string, topic: SyllabusTopic) => {
+      const subject = subjects.find((item) => item.id === subjectId);
+      const unit = subject?.syllabusUnits.find((item) => item.id === unitId);
+
+      if (!subject || !unit) {
+        throw new Error("Unit not found.");
+      }
+
+      const sessionUserId = await getSessionUserId();
+
+      if (sessionUserId) {
+        try {
+          const createdTopic = await supabaseService.createTopic(
+            sessionUserId,
+            unitId,
+            topic,
+            unit.topics.length,
+          );
+
+          setAuthUserId(sessionUserId);
+          setSyncError(null);
+          setSubjectsState((prev) =>
+            prev.map((item) =>
+              item.id === subjectId
+                ? {
+                    ...item,
+                    syllabusUnits: item.syllabusUnits.map((entry) =>
+                      entry.id === unitId
+                        ? { ...entry, topics: [...entry.topics, createdTopic] }
+                        : entry,
+                    ),
+                  }
+                : item,
+            ),
+          );
+
+          return createdTopic;
+        } catch (err) {
+          const message = err instanceof Error ? err.message : "Failed to create topic in Supabase.";
+          console.error("[FocusFlow] Topic create failed:", err);
+          setSyncError(message);
+          throw err instanceof Error ? err : new Error(message);
+        }
+      }
+
+      const isGuestMode = !profile.email || profile.email === "guest@focusflow.app";
+      if (!isSupabaseConfigured || isGuestMode) {
+        const nextUnits = subject.syllabusUnits.map((entry) =>
+          entry.id === unitId ? { ...entry, topics: [...entry.topics, topic] } : entry,
+        );
+        setSyncError(null);
+        setSubjectsState((prev) =>
+          prev.map((item) => (item.id === subjectId ? { ...item, syllabusUnits: nextUnits } : item)),
+        );
+        localDataSource.updateSubject(subjectId, { syllabusUnits: nextUnits });
+        return topic;
+      }
+
+      const authError = new Error("User not signed in.");
+      console.error("[FocusFlow] Topic create blocked: no Supabase session found.");
+      setSyncError(authError.message);
+      throw authError;
+    },
+    [getSessionUserId, profile.email, subjects],
+  );
+
   const deleteSubject = useCallback(
     (subjectId: string) => {
       setSubjectsState((prev) => prev.filter((s) => s.id !== subjectId));
@@ -321,7 +452,6 @@ export const FocusFlowDataProvider = ({ children }: PropsWithChildren) => {
         subjects,
         params,
       );
-      setSubjectsState(updatedSubjects);
 
       const affected = savedSubjectId
         ? updatedSubjects.find((subject) => subject.id === savedSubjectId)
@@ -337,16 +467,38 @@ export const FocusFlowDataProvider = ({ children }: PropsWithChildren) => {
       }
 
       if (sessionUserId && affected) {
-        const subjectAlreadyExisted = subjects.some((subject) => subject.id === affected.id);
+        const existingSubject = subjects.find((subject) => subject.id === affected.id);
 
         try {
-          if (subjectAlreadyExisted) {
-            await supabaseService.updateSubject(sessionUserId, affected.id, affected);
-            await supabaseService.saveSubjectSyllabus(sessionUserId, affected);
+          if (existingSubject) {
+            const existingUnitIds = new Set(existingSubject.syllabusUnits.map((unit) => unit.id));
+            const newUnits = affected.syllabusUnits.filter((unit) => !existingUnitIds.has(unit.id));
+            const createdUnits = await supabaseService.createUnitsWithTopics(
+              sessionUserId,
+              affected.id,
+              newUnits,
+              existingSubject.syllabusUnits.length,
+            );
+            const createdUnitsByDraftId = new Map(
+              newUnits.map((unit, index) => [unit.id, createdUnits[index]] as const),
+            );
+
+            setSubjectsState((prev) =>
+              prev.map((subject) =>
+                subject.id === affected.id
+                  ? {
+                      ...subject,
+                      syllabusUnits: affected.syllabusUnits.map(
+                        (unit) => createdUnitsByDraftId.get(unit.id) ?? unit,
+                      ),
+                    }
+                  : subject,
+              ),
+            );
           } else {
             const createdSubject = await supabaseService.createSubject(sessionUserId, affected);
             setSubjectsState((prev) =>
-              prev.map((subject) => (subject.id === affected.id ? createdSubject : subject)),
+              [createdSubject, ...prev.filter((subject) => subject.id !== affected.id)],
             );
           }
 
@@ -363,6 +515,7 @@ export const FocusFlowDataProvider = ({ children }: PropsWithChildren) => {
       }
 
       if (!isSupabaseConfigured || !profile.email || profile.email === "guest@focusflow.app") {
+        setSubjectsState(updatedSubjects);
         setSyncError(null);
         localDataSource.saveReviewedSyllabus(params);
         return;
@@ -485,6 +638,8 @@ export const FocusFlowDataProvider = ({ children }: PropsWithChildren) => {
     addSession,
     updateSession,
     addSubject,
+    addUnitToSubject,
+    addTopicToUnit,
     updateSubject,
     deleteSubject,
     saveReviewedSyllabus,

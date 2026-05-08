@@ -3,12 +3,12 @@ import { Navigate, Link, useNavigate } from "react-router-dom";
 import { SyllabusImportCard } from "../components/syllabus/SyllabusImportCard";
 import { Button, Card } from "../components/ui";
 import { useFocusFlowData } from "../hooks/useFocusFlowData";
-import { buildSubjectsFromNames } from "../utils/subjects";
+import type { SyllabusUnit } from "../types/models";
 import { isProfileSetupComplete, isSyllabusSetupComplete } from "../utils/profile";
 
 export const SyllabusSetupPage = () => {
   const navigate = useNavigate();
-  const { profile, subjects, setProfile, addSubject, updateSubject } = useFocusFlowData();
+  const { profile, subjects, setProfile, saveReviewedSyllabus } = useFocusFlowData();
 
   if (!profile.isAuthenticated) {
     return <Navigate to="/sign-in" replace />;
@@ -33,24 +33,9 @@ export const SyllabusSetupPage = () => {
   const handleSaveImport = async (params: {
     subjectId?: string;
     subjectName?: string;
-    units: any[];
+    units: SyllabusUnit[];
   }) => {
-    if (params.subjectId) {
-      const existing = subjects.find((s) => s.id === params.subjectId);
-      if (existing) {
-        updateSubject(existing.id, {
-          syllabusUnits: [...existing.syllabusUnits, ...params.units],
-        });
-      }
-    } else if (params.subjectName) {
-      const [nextSubject] = buildSubjectsFromNames([params.subjectName], subjects);
-      if (nextSubject) {
-        await addSubject({
-          ...nextSubject,
-          syllabusUnits: params.units,
-        });
-      }
-    }
+    await saveReviewedSyllabus(params);
   };
 
   return (

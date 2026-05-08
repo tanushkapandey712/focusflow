@@ -12,6 +12,7 @@ import {
   getSubjectCompletionPercent,
   getSyllabusStats,
   getSyllabusTopicStatus,
+  createSyllabusTopic,
   toggleTopicCompletionStatus,
 } from "../utils/syllabus";
 import { getSubjectVisuals } from "../utils/subjects";
@@ -81,7 +82,7 @@ const sortTopics = (topics: SyllabusTopic[], sortOption: TopicSortOption) => {
 export const SubjectSyllabusDetailPage = () => {
   const navigate = useNavigate();
   const { subjectId } = useParams();
-  const { subjects, getSubjectSyllabus, updateSubject } = useFocusFlowData();
+  const { subjects, getSubjectSyllabus, addTopicToUnit, updateSubject } = useFocusFlowData();
   const [examDate, setExamDate] = useState("");
   const [expandedUnitId, setExpandedUnitId] = useState<string | null>(null);
   const [showAllTopics, setShowAllTopics] = useState<Record<string, boolean>>({});
@@ -211,6 +212,10 @@ export const SubjectSyllabusDetailPage = () => {
     );
 
     updateSyllabusUnits(nextUnits);
+  };
+
+  const handleAddTopic = async (unitId: string, title: string) => {
+    await addTopicToUnit(subject.id, unitId, createSyllabusTopic(title));
   };
 
   return (
@@ -414,6 +419,7 @@ export const SubjectSyllabusDetailPage = () => {
                       }))
                     }
                     onToggleTopic={(topicId) => handleToggleTopic(unit.id, topicId)}
+                    onAddTopic={(title) => handleAddTopic(unit.id, title)}
                     onRenameTopic={(topicId, title) => handleRenameTopic(unit.id, topicId, title)}
                     onDeleteTopic={(topicId) => handleDeleteTopic(unit.id, topicId)}
                     progressFillStyle={visuals.fillStyle}

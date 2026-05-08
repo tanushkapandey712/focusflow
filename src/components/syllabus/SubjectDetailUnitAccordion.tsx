@@ -1,5 +1,5 @@
 import { useState, type CSSProperties } from "react";
-import { Check, ChevronDown, PencilLine, Trash2, X } from "lucide-react";
+import { Check, ChevronDown, PencilLine, Plus, Trash2, X } from "lucide-react";
 import { Button, Card } from "../ui";
 import { cn } from "../../lib/cn";
 import type { SyllabusTopic, SyllabusUnit } from "../../types/models";
@@ -24,6 +24,7 @@ interface SubjectDetailUnitAccordionProps {
   onToggle: () => void;
   onToggleShowAll: () => void;
   onToggleTopic: (topicId: string) => void;
+  onAddTopic: (title: string) => void | Promise<void>;
   onRenameTopic: (topicId: string, title: string) => void;
   onDeleteTopic: (topicId: string) => void;
   progressFillStyle?: CSSProperties;
@@ -48,6 +49,7 @@ export const SubjectDetailUnitAccordion = ({
   onToggle,
   onToggleShowAll,
   onToggleTopic,
+  onAddTopic,
   onRenameTopic,
   onDeleteTopic,
   progressFillStyle,
@@ -55,6 +57,9 @@ export const SubjectDetailUnitAccordion = ({
 }: SubjectDetailUnitAccordionProps) => {
   const [editingTopicId, setEditingTopicId] = useState<string | null>(null);
   const [topicDrafts, setTopicDrafts] = useState<Record<string, string>>({});
+  const [newTopicTitle, setNewTopicTitle] = useState("");
+  const [topicCreateError, setTopicCreateError] = useState("");
+  const [isAddingTopic, setIsAddingTopic] = useState(false);
 
   const nextTopic = getNextTopicToStudy(unit.topics);
   const completedTopicCount = getUnitCompletedTopicCount(unit);
@@ -78,6 +83,28 @@ export const SubjectDetailUnitAccordion = ({
 
     onRenameTopic(topicId, title);
     setEditingTopicId(null);
+  };
+
+  const handleAddTopic = async () => {
+    const nextTitle = newTopicTitle.trim();
+
+    if (!nextTitle) {
+      return;
+    }
+
+    setIsAddingTopic(true);
+    setTopicCreateError("");
+
+    try {
+      await onAddTopic(nextTitle);
+      setNewTopicTitle("");
+    } catch (error) {
+      setTopicCreateError(
+        error instanceof Error ? error.message : "We could not save that topic right now.",
+      );
+    } finally {
+      setIsAddingTopic(false);
+    }
   };
 
   return (
@@ -319,6 +346,36 @@ export const SubjectDetailUnitAccordion = ({
                 ) : null}
               </>
             )}
+
+            <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+              <input
+                value={newTopicTitle}
+                onChange={(event) => {
+                  setNewTopicTitle(event.target.value);
+                  setTopicCreateError("");
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    void handleAddTopic();
+                  }
+                }}
+                placeholder="Add a topic"
+                className="field-surface"
+              />
+              <Button
+                variant="secondary"
+                onClick={() => void handleAddTopic()}
+                disabled={isAddingTopic}
+                className="sm:min-w-32"
+              >
+                <Plus size={15} />
+                {isAddingTopic ? "Saving..." : "Add Topic"}
+              </Button>
+            </div>
+            {topicCreateError ? (
+              <p className="mt-2 text-sm text-rose-600 dark:text-rose-300">{topicCreateError}</p>
+            ) : null}
           </div>
         </div>
       </div>
