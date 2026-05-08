@@ -3,9 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { DashboardContainer } from "../components/dashboard/DashboardContainer";
 import { Button, Card, SectionContainer } from "../components/ui";
 import { useFocusFlowData } from "../hooks/useFocusFlowData";
-import { Palette, Clock, Activity, User, LogOut, Trash2, AlertTriangle, Loader2, X } from "lucide-react";
+import { Palette, Clock, Activity, User, LogOut, Trash2, AlertTriangle, Loader2, X, Lock, Eye, EyeOff } from "lucide-react";
 import { cn } from "../lib/cn";
-import { signOut } from "../services/auth/supabaseEmailAuth";
+import { signOut, signInWithPassword } from "../services/auth/supabaseEmailAuth";
 import { deleteAllUserData } from "../services/data/supabaseDataService";
 
 // Simple toggle switch component for settings
@@ -52,22 +52,36 @@ const SettingSelect = ({ label, options, value, onChange }: { label: string, opt
 const CONFIRM_TEXT = "DELETE";
 
 interface DeleteModalProps {
+  email?: string;
   onConfirm: () => Promise<void>;
   onCancel: () => void;
 }
 
-const DeleteAccountModal = ({ onConfirm, onCancel }: DeleteModalProps) => {
+const DeleteAccountModal = ({ email, onConfirm, onCancel }: DeleteModalProps) => {
   const [confirmInput, setConfirmInput] = useState("");
-  const [status, setStatus] = useState<"idle" | "deleting" | "error">("idle");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [status, setStatus] = useState<"idle" | "verifying" | "deleting" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
 
-  const isConfirmed = confirmInput.trim().toUpperCase() === CONFIRM_TEXT;
+  const isConfirmedText = confirmInput.trim().toUpperCase() === CONFIRM_TEXT;
+  const isReady = isConfirmedText && password.length > 0;
 
   const handleDelete = async () => {
-    if (!isConfirmed) return;
-    setStatus("deleting");
+    if (!isReady || !email) return;
+    setStatus("verifying");
     setErrorMsg("");
+    
     try {
+      // 1. Verify password using Supabase Auth
+      try {
+        await signInWithPassword(email, password);
+      } catch (authErr) {
+        throw new Error("Incorrect password.");
+      }
+
+      // 2. Perform deletion
+      setStatus("deleting");
       await onConfirm();
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : "Something went wrong.");
@@ -80,7 +94,7 @@ const DeleteAccountModal = ({ onConfirm, onCancel }: DeleteModalProps) => {
       <div className="relative w-full max-w-md overflow-hidden rounded-[2rem] border border-white/60 bg-white/90 p-6 shadow-2xl backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/90 sm:p-8">
         <button
           onClick={onCancel}
-          disabled={status === "deleting"}
+          disabled={status === "deleting" || status === "verifying"}
           className="absolute right-4 top-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 disabled:opacity-50"
           aria-label="Close"
         >
@@ -115,11 +129,38 @@ const DeleteAccountModal = ({ onConfirm, onCancel }: DeleteModalProps) => {
               type="text"
               value={confirmInput}
               onChange={(e) => setConfirmInput(e.target.value)}
-              disabled={status === "deleting"}
+              disabled={status === "deleting" || status === "verifying"}
               placeholder={CONFIRM_TEXT}
               autoComplete="off"
               className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-rose-500/30 focus:border-rose-400 disabled:opacity-50"
             />
+          </div>
+
+          <div className="w-full space-y-2 text-left">
+            <label className="text-xs font-medium text-slate-500 dark:text-slate-400 block">
+              Enter your password
+            </label>
+            <div className="relative">
+              <Lock size={16} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={status === "deleting" || status === "verifying"}
+                placeholder="Current password"
+                autoComplete="current-password"
+                className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 py-2.5 pl-11 pr-12 text-sm outline-none focus:ring-2 focus:ring-rose-500/30 focus:border-rose-400 disabled:opacity-50"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                disabled={status === "deleting" || status === "verifying"}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors disabled:opacity-50"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
           </div>
 
           {errorMsg && (
@@ -130,7 +171,7 @@ const DeleteAccountModal = ({ onConfirm, onCancel }: DeleteModalProps) => {
             <Button
               variant="secondary"
               onClick={onCancel}
-              disabled={status === "deleting"}
+              disabled={status === "deleting" || status === "verifying"}
               className="flex-1"
             >
               Cancel
@@ -138,18 +179,18 @@ const DeleteAccountModal = ({ onConfirm, onCancel }: DeleteModalProps) => {
             <button
               type="button"
               onClick={handleDelete}
-              disabled={!isConfirmed || status === "deleting"}
+              disabled={!isReady || status === "deleting" || status === "verifying"}
               className={cn(
                 "flex-1 flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all",
-                isConfirmed
+                isReady
                   ? "bg-rose-600 text-white hover:bg-rose-700 shadow-sm"
                   : "bg-slate-100 text-slate-400 cursor-not-allowed dark:bg-slate-800 dark:text-slate-600",
               )}
             >
-              {status === "deleting" ? (
+              {status === "deleting" || status === "verifying" ? (
                 <>
                   <Loader2 size={16} className="animate-spin" />
-                  Deleting...
+                  {status === "verifying" ? "Verifying..." : "Deleting..."}
                 </>
               ) : (
                 <>
@@ -433,6 +474,7 @@ export const SettingsPage = () => {
       {/* Delete confirmation modal */}
       {showDeleteModal && (
         <DeleteAccountModal
+          email={profile.email}
           onConfirm={handleDeleteAccount}
           onCancel={() => setShowDeleteModal(false)}
         />

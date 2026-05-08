@@ -91,7 +91,17 @@ export const FocusFlowDataProvider = ({ children }: PropsWithChildren) => {
       const nextUserId = session?.user?.id ?? null;
       setAuthUserId(nextUserId);
       if (!nextUserId) {
-        // Logged out — reset to defaults but keep localStorage data
+        // Logged out — explicitly reset to an unauthenticated state
+        const emptyData = localDataSource.loadInitialData();
+        // Keep the guest email out so it fails the RequireSignedIn check
+        setProfileState({
+          ...emptyData.profile,
+          isAuthenticated: false,
+          email: undefined
+        });
+        setSubjectsState([]);
+        setSessions([]);
+        setGoalsState([]);
       }
     });
 
