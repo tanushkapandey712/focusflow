@@ -7,7 +7,6 @@ import { Palette, Clock, Activity, User, LogOut, Trash2, AlertTriangle, Loader2,
 import { cn } from "../lib/cn";
 import { signOut } from "../services/auth/supabaseEmailAuth";
 import { deleteAllUserData } from "../services/data/supabaseDataService";
-import { getCurrentUserId } from "../services/data/supabaseClient";
 
 // Simple toggle switch component for settings
 const SettingToggle = ({ label, description, checked, onChange }: { label: string, description?: string, checked: boolean, onChange: (val: boolean) => void }) => (
@@ -172,7 +171,7 @@ const DeleteAccountModal = ({ onConfirm, onCancel }: DeleteModalProps) => {
 
 export const SettingsPage = () => {
   const navigate = useNavigate();
-  const { profile, setProfile } = useFocusFlowData();
+  const { profile, setProfile, authUserId } = useFocusFlowData();
 
   // Appearance
   const [theme, setTheme] = useState("system");
@@ -237,11 +236,11 @@ export const SettingsPage = () => {
 
   // ── Delete Account ───────────────────────────────────────────────────────
   const handleDeleteAccount = async () => {
-    const userId = await getCurrentUserId();
-    if (!userId) throw new Error("Not signed in.");
+    // Use the already-hydrated auth user ID from context
+    if (!authUserId) throw new Error("Not signed in.");
 
     // 1. Wipe all user data from Supabase tables
-    await deleteAllUserData(userId);
+    await deleteAllUserData(authUserId);
 
     // 2. Sign out
     await signOut();

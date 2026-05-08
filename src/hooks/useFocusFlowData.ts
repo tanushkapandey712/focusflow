@@ -37,6 +37,8 @@ interface FocusFlowDataValue {
   goals: StudyGoal[];
   isLoading: boolean;
   syncError: string | null;
+  /** The Supabase auth user ID, or null if not signed in via Supabase. */
+  authUserId: string | null;
   addSession: (session: StudySession) => void;
   updateSession: (sessionId: string, patch: Partial<StudySession>) => void;
   addSubject: (subject: Subject) => void;
@@ -347,6 +349,7 @@ export const FocusFlowDataProvider = ({ children }: PropsWithChildren) => {
     goals,
     isLoading,
     syncError,
+    authUserId,
     addSession,
     updateSession,
     addSubject,

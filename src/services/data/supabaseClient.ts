@@ -37,8 +37,8 @@ export const getCurrentUserId = async (): Promise<string | null> => {
   if (!isSupabaseConfigured) return null;
 
   const {
-    data: { user },
-  } = await getSupabaseClient().auth.getUser();
+    data: { session },
+  } = await getSupabaseClient().auth.getSession();
 
-  return user?.id ?? null;
+  return session?.user?.id ?? null;
 };
