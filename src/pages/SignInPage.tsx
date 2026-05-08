@@ -241,6 +241,18 @@ export const SignInPage = () => {
                 </button>
               </div>
 
+              {/* Forgot password link */}
+              {mode === "sign-in" && (
+                <div className="flex justify-end pt-1">
+                  <Link 
+                    to="/forgot-password" 
+                    className="text-xs font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 transition-colors"
+                  >
+                    Forgot password?
+                  </Link>
+                </div>
+              )}
+
               {/* Confirm Password (sign-up only) */}
               {mode === "sign-up" && (
                 <div className="relative">

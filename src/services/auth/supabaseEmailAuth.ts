@@ -55,6 +55,28 @@ export const signInWithPassword = async (email: string, password: string) => {
 };
 
 // ---------------------------------------------------------------------------
+// Password Reset
+// ---------------------------------------------------------------------------
+
+export const resetPasswordForEmail = async (email: string) => {
+  const client = getSupabaseClient();
+  const { error } = await client.auth.resetPasswordForEmail(email, {
+    redirectTo: `${window.location.origin}/reset-password`,
+  });
+
+  if (error) throw error;
+};
+
+export const updateUserPassword = async (password: string) => {
+  const client = getSupabaseClient();
+  const { error } = await client.auth.updateUser({
+    password,
+  });
+
+  if (error) throw error;
+};
+
+// ---------------------------------------------------------------------------
 // Session helpers (unchanged)
 // ---------------------------------------------------------------------------
 

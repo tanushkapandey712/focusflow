@@ -13,6 +13,8 @@ import { OnboardingPage } from "../pages/OnboardingPage";
 import { SessionHistoryPage } from "../pages/SessionHistoryPage";
 import { SettingsPage } from "../pages/SettingsPage";
 import { SignInPage } from "../pages/SignInPage";
+import { ForgotPasswordPage } from "../pages/ForgotPasswordPage";
+import { ResetPasswordPage } from "../pages/ResetPasswordPage";
 import { SubjectSyllabusDetailPage } from "../pages/SubjectSyllabusDetailPage";
 import { SyllabusHubPage } from "../pages/SyllabusHubPage";
 import { TimerPage } from "../pages/TimerPage";
@@ -23,6 +25,8 @@ export const AppRouter = () => (
   <Routes>
     <Route path="/" element={<LandingPage />} />
     <Route path="/sign-in" element={<SignInPage />} />
+    <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+    <Route path="/reset-password" element={<ResetPasswordPage />} />
     <Route path="/privacy" element={<PrivacyPage />} />
     <Route path="/terms" element={<TermsPage />} />
     
