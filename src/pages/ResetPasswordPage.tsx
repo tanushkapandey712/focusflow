@@ -12,11 +12,20 @@ export const ResetPasswordPage = () => {
   const [error, setError] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "success">("idle");
 
+  const [fatalError, setFatalError] = useState("");
+
   useEffect(() => {
-    // If the user lands here directly without a `#access_token` hash in the URL,
-    // they might not have the session established by Supabase's redirect.
-    // However, Supabase automatically handles the hash and sets the session on load.
-    // So we just rely on `updateUserPassword` doing its job with the current session.
+    // Check if Supabase passed an error in the URL hash (e.g. expired or invalid link)
+    const hash = window.location.hash;
+    if (hash && hash.includes("error=")) {
+      const params = new URLSearchParams(hash.substring(1));
+      const errorDesc = params.get("error_description");
+      if (errorDesc) {
+        setFatalError(errorDesc.replace(/\+/g, " "));
+      } else {
+        setFatalError("The password reset link is invalid or has expired.");
+      }
+    }
   }, []);
 
   const validate = (): string | null => {
@@ -86,8 +95,20 @@ export const ResetPasswordPage = () => {
               </div>
             </div>
 
-            {/* Form */}
-            {status === "success" ? (
+            {/* Form or Error */}
+            {fatalError ? (
+              <div className="w-full space-y-6">
+                <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-300">
+                  {fatalError}
+                </div>
+                <Button
+                  onClick={() => navigate("/forgot-password")}
+                  className="w-full h-12 justify-center rounded-full"
+                >
+                  Request New Link
+                </Button>
+              </div>
+            ) : status === "success" ? (
               <div className="w-full space-y-4">
                 <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300">
                   Password successfully updated! Redirecting to sign in...
