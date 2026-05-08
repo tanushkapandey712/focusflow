@@ -24,13 +24,10 @@ const ensureHexColor = (value: string | undefined, fallbackSeed: string) => {
   return /^#[0-9a-f]{6}$/i.test(normalized) ? normalized : fallbackColorFor(fallbackSeed);
 };
 
-const createSubjectId = (value: string) => {
-  const normalized = normalizeSubjectName(value)
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-
-  return normalized || `subject-${Math.abs(hashString(value))}`;
-};
+const createSubjectId = () =>
+  typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+    ? crypto.randomUUID()
+    : `subject-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
 export const parseSubjectNames = (value: string) => {
   const uniqueNames: string[] = [];
@@ -66,7 +63,7 @@ export const buildSubjectsFromNames = (subjectNames: string[], existingSubjects:
 
     const existing = existingByName.get(normalized);
     acc.push({
-      id: existing?.id ?? createSubjectId(name),
+      id: existing?.id ?? createSubjectId(),
       name: existing?.name ?? name,
       color: ensureHexColor(existing?.color, existing?.name ?? name),
       syllabusUnits: existing?.syllabusUnits ?? [],

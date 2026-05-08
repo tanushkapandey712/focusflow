@@ -21,6 +21,10 @@ import { getSupabaseClient } from "./supabaseClient";
 // ---------------------------------------------------------------------------
 
 const sb = () => getSupabaseClient();
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+const isUuid = (value: string | undefined) => Boolean(value && UUID_PATTERN.test(value));
 
 /** Throws a readable error if a Supabase query fails. */
 const throwOnError = <T>(result: { data: T; error: unknown }): T => {
@@ -203,50 +207,88 @@ export const fetchSubjects = async (userId: string): Promise<Subject[]> => {
   return subjects.map((s) => toAppSubject(s, units, topics));
 };
 
-export const createSubject = async (userId: string, subject: Subject): Promise<void> => {
-  // Insert subject
-  throwOnError(
-    await sb().from("subjects").upsert({
-      id: subject.id,
-      user_id: userId,
-      name: subject.name,
-      color: subject.color,
-      exam_date: subject.examDate || null,
-      updated_at: new Date().toISOString(),
-    }),
-  );
+export const createSubject = async (userId: string, subject: Subject): Promise<Subject> => {
+  const updatedAt = new Date().toISOString();
+  let createdSubject: DbSubject | null = null;
 
-  // Insert units + topics
-  for (let ui = 0; ui < subject.syllabusUnits.length; ui++) {
-    const unit = subject.syllabusUnits[ui];
-    throwOnError(
-      await sb().from("units").upsert({
-        id: unit.id,
-        user_id: userId,
-        subject_id: subject.id,
-        title: unit.title,
-        order_index: ui,
-        updated_at: new Date().toISOString(),
-      }),
-    );
-
-    for (let ti = 0; ti < unit.topics.length; ti++) {
-      const topic = unit.topics[ti];
-      throwOnError(
-        await sb().from("topics").upsert({
-          id: topic.id,
+  try {
+    createdSubject = throwOnError(
+      await sb()
+        .from("subjects")
+        .insert({
+          ...(isUuid(subject.id) ? { id: subject.id } : {}),
           user_id: userId,
-          unit_id: unit.id,
-          title: topic.title,
-          status: topic.status,
-          studied_minutes: topic.studiedMinutes || 0,
-          study_sessions_count: topic.studySessionsCount || 0,
-          last_studied_at: topic.lastStudiedAt || null,
-          order_index: ti,
-          updated_at: new Date().toISOString(),
-        }),
-      );
+          name: subject.name,
+          color: subject.color,
+          exam_date: subject.examDate || null,
+          updated_at: updatedAt,
+        })
+        .select("*")
+        .single(),
+    ) as DbSubject;
+
+    const createdUnits: DbUnit[] = [];
+    const createdTopics: DbTopic[] = [];
+
+    for (let ui = 0; ui < subject.syllabusUnits.length; ui++) {
+      const unit = subject.syllabusUnits[ui];
+      const createdUnit = throwOnError(
+        await sb()
+          .from("units")
+          .insert({
+            ...(isUuid(unit.id) ? { id: unit.id } : {}),
+            user_id: userId,
+            subject_id: createdSubject.id,
+            title: unit.title,
+            order_index: ui,
+            updated_at: updatedAt,
+          })
+          .select("*")
+          .single(),
+      ) as DbUnit;
+
+      createdUnits.push(createdUnit);
+
+      for (let ti = 0; ti < unit.topics.length; ti++) {
+        const topic = unit.topics[ti];
+        const createdTopic = throwOnError(
+          await sb()
+            .from("topics")
+            .insert({
+              ...(isUuid(topic.id) ? { id: topic.id } : {}),
+              user_id: userId,
+              unit_id: createdUnit.id,
+              title: topic.title,
+              status: topic.status,
+              studied_minutes: topic.studiedMinutes || 0,
+              study_sessions_count: topic.studySessionsCount || 0,
+              last_studied_at: topic.lastStudiedAt || null,
+              order_index: ti,
+              updated_at: updatedAt,
+            })
+            .select("*")
+            .single(),
+        ) as DbTopic;
+
+        createdTopics.push(createdTopic);
+      }
     }
+
+    return toAppSubject(createdSubject, createdUnits, createdTopics);
+  } catch (error) {
+    if (createdSubject) {
+      const rollbackResult = await sb()
+        .from("subjects")
+        .delete()
+        .eq("id", createdSubject.id)
+        .eq("user_id", userId);
+
+      if (rollbackResult.error) {
+        console.error("[FocusFlow] Failed to rollback subject after create error:", rollbackResult.error);
+      }
+    }
+
+    throw error instanceof Error ? error : new Error("Failed to create subject.");
   }
 };
 

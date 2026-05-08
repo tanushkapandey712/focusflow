@@ -30,7 +30,7 @@ export const SyllabusSetupPage = () => {
     navigate("/schedule-setup");
   };
 
-  const handleSaveImport = (params: {
+  const handleSaveImport = async (params: {
     subjectId?: string;
     subjectName?: string;
     units: any[];
@@ -45,7 +45,7 @@ export const SyllabusSetupPage = () => {
     } else if (params.subjectName) {
       const [nextSubject] = buildSubjectsFromNames([params.subjectName], subjects);
       if (nextSubject) {
-        addSubject({
+        await addSubject({
           ...nextSubject,
           syllabusUnits: params.units,
         });

@@ -15,8 +15,9 @@ export const SyllabusHubPage = () => {
   const [newSubjectName, setNewSubjectName] = useState("");
   const [error, setError] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [isSavingSubject, setIsSavingSubject] = useState(false);
 
-  const handleAddSubject = () => {
+  const handleAddSubject = async () => {
     const title = newSubjectName.trim();
 
     if (!title) {
@@ -40,9 +41,21 @@ export const SyllabusHubPage = () => {
       return;
     }
 
-    addSubject(nextSubject);
-    setNewSubjectName("");
-    setError("");
+    setIsSavingSubject(true);
+
+    try {
+      await addSubject(nextSubject);
+      setNewSubjectName("");
+      setError("");
+    } catch (subjectError) {
+      const message =
+        subjectError instanceof Error
+          ? subjectError.message
+          : "We could not save that subject right now.";
+      setError(message);
+    } finally {
+      setIsSavingSubject(false);
+    }
   };
 
   const filteredSubjects = subjects.filter((subject) => {
@@ -97,9 +110,13 @@ export const SyllabusHubPage = () => {
                   aria-invalid={!!error}
                   className={`field-surface ${error ? "ring-2 ring-rose-400/40 border-rose-400 dark:ring-rose-500/40 dark:border-rose-500" : ""}`}
                 />
-                <Button onClick={handleAddSubject} className="sm:min-w-36">
+                <Button
+                  onClick={() => void handleAddSubject()}
+                  className="sm:min-w-36"
+                  disabled={isSavingSubject}
+                >
                   <Plus size={15} />
-                  Add Subject
+                  {isSavingSubject ? "Saving..." : "Add Subject"}
                 </Button>
               </div>
               {error ? (

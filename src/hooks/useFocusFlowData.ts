@@ -41,10 +41,10 @@ interface FocusFlowDataValue {
   authUserId: string | null;
   addSession: (session: StudySession) => void;
   updateSession: (sessionId: string, patch: Partial<StudySession>) => void;
-  addSubject: (subject: Subject) => void;
+  addSubject: (subject: Subject) => Promise<Subject>;
   updateSubject: (subjectId: string, patch: Partial<Subject>) => void;
   deleteSubject: (subjectId: string) => void;
-  saveReviewedSyllabus: (params: SaveReviewedSyllabusParams) => void;
+  saveReviewedSyllabus: (params: SaveReviewedSyllabusParams) => Promise<void>;
   getSubjectSyllabus: (subjectId: string) => SyllabusUnit[];
   setSubjects: (nextSubjects: Subject[]) => void;
   setProfile: (nextProfile: UserProfile) => void;
@@ -125,12 +125,15 @@ export const FocusFlowDataProvider = ({ children }: PropsWithChildren) => {
 
       if (cloudProfile) {
         setProfileState(cloudProfile);
-        // Also save to localStorage for offline fallback
-        localDataSource.saveProfile(cloudProfile);
       } else {
         // First-time user — create profile in Supabase from current local profile
         const currentProfile = localDataSource.loadInitialData().profile;
         await supabaseService.upsertProfile(userId, {
+          ...currentProfile,
+          id: userId,
+          isAuthenticated: true,
+        });
+        setProfileState({
           ...currentProfile,
           id: userId,
           isAuthenticated: true,
@@ -140,12 +143,6 @@ export const FocusFlowDataProvider = ({ children }: PropsWithChildren) => {
       setSubjectsState(cloudSubjects);
       setSessions(cloudSessions);
       setGoalsState(cloudGoals);
-
-      // Cache in localStorage for offline access
-      localDataSource.saveSubjects(cloudSubjects);
-      localDataSource.saveGoals(cloudGoals);
-
-
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to load your data.";
       setSyncError(message);
@@ -164,6 +161,30 @@ export const FocusFlowDataProvider = ({ children }: PropsWithChildren) => {
     } else {
       hydrateFromCloud(authUserId);
     }
+
+    // Subscribe to realtime changes for multi-device sync
+    if (isSupabaseConfigured) {
+      const client = getSupabaseClient();
+      const channel = client
+        .channel(`user-data-sync-${authUserId}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            filter: `user_id=eq.${authUserId}`,
+          },
+          () => {
+            // Refetch data when a mutation occurs on another device
+            hydrateFromCloud(authUserId);
+          }
+        )
+        .subscribe();
+
+      return () => {
+        client.removeChannel(channel);
+      };
+    }
   }, [authUserId, hydrateFromCloud]);
 
   const refreshFromCloud = useCallback(async () => {
@@ -171,6 +192,23 @@ export const FocusFlowDataProvider = ({ children }: PropsWithChildren) => {
       await hydrateFromCloud(authUserId);
     }
   }, [authUserId, hydrateFromCloud]);
+
+  const getSessionUserId = useCallback(async () => {
+    if (!isSupabaseConfigured) {
+      return null;
+    }
+
+    const {
+      data: { session },
+      error,
+    } = await getSupabaseClient().auth.getSession();
+
+    if (error) {
+      throw error;
+    }
+
+    return session?.user?.id ?? null;
+  }, []);
 
   // -------------------------------------------------------------------------
   // Background sync helper — wraps Supabase calls with error handling
@@ -193,74 +231,149 @@ export const FocusFlowDataProvider = ({ children }: PropsWithChildren) => {
   // -------------------------------------------------------------------------
   const addSession = useCallback(
     (session: StudySession) => {
-      // Local update
-      const next = localDataSource.saveSession(session);
-      setSessions(next);
-      // Cloud sync
-      syncToCloud((userId) => supabaseService.createSession(userId, session));
+      setSessions((prev) => [...prev, session]);
+      if (authUserId) {
+        syncToCloud((userId) => supabaseService.createSession(userId, session));
+      } else {
+        localDataSource.saveSession(session);
+      }
     },
-    [syncToCloud],
+    [authUserId, syncToCloud],
   );
 
   const updateSession = useCallback(
     (sessionId: string, patch: Partial<StudySession>) => {
-      const next = localDataSource.updateSession(sessionId, patch);
-      setSessions(next);
-      syncToCloud((userId) => supabaseService.updateSession(userId, sessionId, patch));
+      setSessions((prev) => prev.map((s) => (s.id === sessionId ? { ...s, ...patch } : s)));
+      if (authUserId) {
+        syncToCloud((userId) => supabaseService.updateSession(userId, sessionId, patch));
+      } else {
+        localDataSource.updateSession(sessionId, patch);
+      }
     },
-    [syncToCloud],
+    [authUserId, syncToCloud],
   );
 
   const addSubject = useCallback(
-    (subject: Subject) => {
-      const next = localDataSource.addSubject(subject);
-      setSubjectsState(next);
-      syncToCloud((userId) => supabaseService.createSubject(userId, subject));
+    async (subject: Subject) => {
+      const sessionUserId = await getSessionUserId();
+
+      if (sessionUserId) {
+        try {
+          const createdSubject = await supabaseService.createSubject(sessionUserId, subject);
+          setAuthUserId(sessionUserId);
+          setSyncError(null);
+          setSubjectsState((prev) => [createdSubject, ...prev.filter((s) => s.id !== createdSubject.id)]);
+          return createdSubject;
+        } catch (err) {
+          const message =
+            err instanceof Error ? err.message : "Failed to create subject in Supabase.";
+          console.error("[FocusFlow] Subject create failed:", err);
+          setSyncError(message);
+          throw err instanceof Error ? err : new Error(message);
+        }
+      }
+
+      const isGuestMode = !profile.email || profile.email === "guest@focusflow.app";
+      if (!isSupabaseConfigured || isGuestMode) {
+        setSubjectsState((prev) => [...prev, subject]);
+        setSyncError(null);
+        localDataSource.addSubject(subject);
+        return subject;
+      }
+
+      const authError = new Error("User not signed in.");
+      console.error("[FocusFlow] Subject create blocked: no Supabase session found.");
+      setSyncError(authError.message);
+      throw authError;
     },
-    [syncToCloud],
+    [getSessionUserId, profile.email],
   );
 
   const updateSubject = useCallback(
     (subjectId: string, patch: Partial<Subject>) => {
-      const next = localDataSource.updateSubject(subjectId, patch);
-      setSubjectsState(next);
-      syncToCloud((userId) => supabaseService.updateSubject(userId, subjectId, patch));
+      setSubjectsState((prev) => prev.map((s) => (s.id === subjectId ? { ...s, ...patch } : s)));
+      if (authUserId) {
+        syncToCloud((userId) => supabaseService.updateSubject(userId, subjectId, patch));
+      } else {
+        localDataSource.updateSubject(subjectId, patch);
+      }
     },
-    [syncToCloud],
+    [authUserId, syncToCloud],
   );
 
   const deleteSubject = useCallback(
     (subjectId: string) => {
-      const current = localDataSource.loadInitialData().subjects;
-      const next = current.filter((s) => s.id !== subjectId);
-      localDataSource.saveSubjects(next);
-      setSubjectsState(next);
-      syncToCloud((userId) => supabaseService.deleteSubject(userId, subjectId));
+      setSubjectsState((prev) => prev.filter((s) => s.id !== subjectId));
+      if (authUserId) {
+        syncToCloud((userId) => supabaseService.deleteSubject(userId, subjectId));
+      } else {
+        const current = localDataSource.loadInitialData().subjects;
+        const next = current.filter((s) => s.id !== subjectId);
+        localDataSource.saveSubjects(next);
+      }
     },
-    [syncToCloud],
+    [authUserId, syncToCloud],
   );
 
   const saveReviewedSyllabus = useCallback(
-    (params: SaveReviewedSyllabusParams) => {
-      const next = localDataSource.saveReviewedSyllabus(params);
-      setSubjectsState(next);
-      // Sync the affected subject to cloud
-      syncToCloud(async (userId) => {
-        const { subjects: updatedSubjects } = saveReviewedSyllabusToSubjects(next, params);
-        // Find the affected subject and sync it
-        const affectedId = params.subjectId;
-        if (affectedId) {
-          const affected = updatedSubjects.find((s) => s.id === affectedId);
-          if (affected) await supabaseService.saveSubjectSyllabus(userId, affected);
-        } else {
-          // New subject was created — sync all
-          for (const s of updatedSubjects) {
-            await supabaseService.createSubject(userId, s);
-          }
+    async (params: SaveReviewedSyllabusParams) => {
+      const { subjects: updatedSubjects, savedSubjectId } = saveReviewedSyllabusToSubjects(
+        subjects,
+        params,
+      );
+      setSubjectsState(updatedSubjects);
+
+      const affected = savedSubjectId
+        ? updatedSubjects.find((subject) => subject.id === savedSubjectId)
+        : undefined;
+      const sessionUserId = await getSessionUserId();
+
+      if (!affected) {
+        setSyncError(null);
+        if (!isSupabaseConfigured || !profile.email || profile.email === "guest@focusflow.app") {
+          localDataSource.saveReviewedSyllabus(params);
         }
-      });
+        return;
+      }
+
+      if (sessionUserId && affected) {
+        const subjectAlreadyExisted = subjects.some((subject) => subject.id === affected.id);
+
+        try {
+          if (subjectAlreadyExisted) {
+            await supabaseService.updateSubject(sessionUserId, affected.id, affected);
+            await supabaseService.saveSubjectSyllabus(sessionUserId, affected);
+          } else {
+            const createdSubject = await supabaseService.createSubject(sessionUserId, affected);
+            setSubjectsState((prev) =>
+              prev.map((subject) => (subject.id === affected.id ? createdSubject : subject)),
+            );
+          }
+
+          setAuthUserId(sessionUserId);
+          setSyncError(null);
+          return;
+        } catch (err) {
+          const message =
+            err instanceof Error ? err.message : "Failed to save your syllabus to Supabase.";
+          console.error("[FocusFlow] Syllabus save failed:", err);
+          setSyncError(message);
+          throw err instanceof Error ? err : new Error(message);
+        }
+      }
+
+      if (!isSupabaseConfigured || !profile.email || profile.email === "guest@focusflow.app") {
+        setSyncError(null);
+        localDataSource.saveReviewedSyllabus(params);
+        return;
+      }
+
+      const authError = new Error("User not signed in.");
+      console.error("[FocusFlow] Syllabus save blocked: no Supabase session found.");
+      setSyncError(authError.message);
+      throw authError;
     },
-    [syncToCloud],
+    [getSessionUserId, profile.email, subjects],
   );
 
   const getSubjectSyllabus = useCallback(
@@ -271,33 +384,42 @@ export const FocusFlowDataProvider = ({ children }: PropsWithChildren) => {
   const setSubjects = useCallback(
     (nextSubjects: Subject[]) => {
       setSubjectsState(nextSubjects);
-      localDataSource.saveSubjects(nextSubjects);
-      // Full sync — save each subject to cloud
-      syncToCloud(async (userId) => {
-        for (const subject of nextSubjects) {
-          await supabaseService.createSubject(userId, subject);
-        }
-      });
+      if (authUserId) {
+        syncToCloud(async (userId) => {
+          for (const subject of nextSubjects) {
+            await supabaseService.updateSubject(userId, subject.id, subject);
+            await supabaseService.saveSubjectSyllabus(userId, subject);
+          }
+        });
+      } else {
+        localDataSource.saveSubjects(nextSubjects);
+      }
     },
-    [syncToCloud],
+    [authUserId, syncToCloud],
   );
 
   const setProfile = useCallback(
     (nextProfile: UserProfile) => {
       setProfileState(nextProfile);
-      localDataSource.saveProfile(nextProfile);
-      syncToCloud((userId) => supabaseService.upsertProfile(userId, nextProfile));
+      if (authUserId) {
+        syncToCloud((userId) => supabaseService.upsertProfile(userId, nextProfile));
+      } else {
+        localDataSource.saveProfile(nextProfile);
+      }
     },
-    [syncToCloud],
+    [authUserId, syncToCloud],
   );
 
   const setGoals = useCallback(
     (nextGoals: StudyGoal[]) => {
       setGoalsState(nextGoals);
-      localDataSource.saveGoals(nextGoals);
-      syncToCloud((userId) => supabaseService.saveAllGoals(userId, nextGoals));
+      if (authUserId) {
+        syncToCloud((userId) => supabaseService.saveAllGoals(userId, nextGoals));
+      } else {
+        localDataSource.saveGoals(nextGoals);
+      }
     },
-    [syncToCloud],
+    [authUserId, syncToCloud],
   );
 
   // -------------------------------------------------------------------------

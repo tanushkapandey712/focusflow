@@ -45,6 +45,7 @@ export const OnboardingPage = () => {
 
   // Step 5: Goals
   const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
+  const [isCompleting, setIsCompleting] = useState(false);
 
   // Smooth scroll to top on step change
   useEffect(() => {
@@ -92,29 +93,41 @@ export const OnboardingPage = () => {
     }
   };
 
-  const handleComplete = () => {
-    // Save Profile
-    setProfile({
-      ...profile,
-      name: name.trim() || "Student",
-      institutionType,
-      institutionName,
-      classOrCourse,
-      fieldOfStudy,
-      hasCompletedProfileSetup: true,
-      hasCompletedSyllabusSetup: true,
-      hasCompletedScheduleSetup: true,
-    });
+  const handleComplete = async () => {
+    setStepError("");
+    setIsCompleting(true);
 
-    // Save Subjects
-    const nextSubjects = buildSubjectsFromNames(localSubjects, subjects);
-    nextSubjects.forEach((s) => {
-      if (!subjects.find((sub) => sub.name === s.name)) {
-        addSubject(s);
+    try {
+      setProfile({
+        ...profile,
+        name: name.trim() || "Student",
+        institutionType,
+        institutionName,
+        classOrCourse,
+        fieldOfStudy,
+        hasCompletedProfileSetup: true,
+        hasCompletedSyllabusSetup: true,
+        hasCompletedScheduleSetup: true,
+      });
+
+      const nextSubjects = buildSubjectsFromNames(localSubjects, subjects);
+      for (const subject of nextSubjects) {
+        if (!subjects.find((sub) => sub.name === subject.name)) {
+          await addSubject(subject);
+        }
       }
-    });
 
-    navigate("/dashboard");
+      navigate("/dashboard");
+    } catch (completeError) {
+      const message =
+        completeError instanceof Error
+          ? completeError.message
+          : "We could not save your subjects right now.";
+      console.error("[FocusFlow] Onboarding completion failed:", completeError);
+      setStepError(message);
+    } finally {
+      setIsCompleting(false);
+    }
   };
 
   const renderStepContent = () => {
@@ -396,9 +409,14 @@ export const OnboardingPage = () => {
               </div>
             </Card>
 
-            <Button className="w-full h-14 rounded-full mt-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-100" onClick={handleComplete}>
+            <Button
+              className="w-full h-14 rounded-full mt-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-100"
+              onClick={() => void handleComplete()}
+              disabled={isCompleting}
+            >
               Enter FocusFlow <ArrowRight size={18} className="ml-2" />
             </Button>
+            {stepError ? <p className="text-sm text-rose-500">{stepError}</p> : null}
           </div>
         );
       default:

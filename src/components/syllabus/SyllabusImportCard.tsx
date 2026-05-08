@@ -13,7 +13,11 @@ import {
 
 interface SyllabusImportCardProps {
   subjects: Subject[];
-  onSaveImport: (params: { subjectId?: string; subjectName?: string; units: SyllabusUnit[] }) => void;
+  onSaveImport: (params: {
+    subjectId?: string;
+    subjectName?: string;
+    units: SyllabusUnit[];
+  }) => void | Promise<void>;
 }
 
 const NEW_SUBJECT_VALUE = "__new__";
@@ -27,6 +31,7 @@ export const SyllabusImportCard = ({ subjects, onSaveImport }: SyllabusImportCar
   const [error, setError] = useState("");
   const [pdfStatus, setPdfStatus] = useState<string>("");
   const [isExtractingPdf, setIsExtractingPdf] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [reviewUnits, setReviewUnits] = useState<SyllabusUnit[] | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -193,7 +198,7 @@ export const SyllabusImportCard = ({ subjects, onSaveImport }: SyllabusImportCar
     );
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!reviewUnits) {
       return;
     }
@@ -210,15 +215,27 @@ export const SyllabusImportCard = ({ subjects, onSaveImport }: SyllabusImportCar
       return;
     }
 
-    onSaveImport({
-      subjectId: usesNewSubject ? undefined : targetSubjectId,
-      subjectName: usesNewSubject ? newSubjectName.trim() : undefined,
-      units: normalizedUnits,
-    });
+    setIsSaving(true);
 
-    resetImportState();
-    if (usesNewSubject) {
-      setNewSubjectName("");
+    try {
+      await onSaveImport({
+        subjectId: usesNewSubject ? undefined : targetSubjectId,
+        subjectName: usesNewSubject ? newSubjectName.trim() : undefined,
+        units: normalizedUnits,
+      });
+
+      resetImportState();
+      if (usesNewSubject) {
+        setNewSubjectName("");
+      }
+    } catch (saveError) {
+      setError(
+        saveError instanceof Error
+          ? saveError.message
+          : "We could not save that subject right now.",
+      );
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -470,7 +487,9 @@ export const SyllabusImportCard = ({ subjects, onSaveImport }: SyllabusImportCar
                   ))}
 
                   <div className="flex flex-wrap gap-2">
-                    <Button onClick={handleSave}>Save reviewed syllabus</Button>
+                    <Button onClick={() => void handleSave()} disabled={isSaving}>
+                      {isSaving ? "Saving..." : "Save reviewed syllabus"}
+                    </Button>
                     <p className="text-xs leading-6 text-slate-500 dark:text-slate-400">
                       Review is mandatory. The imported structure will only save after this step.
                     </p>
