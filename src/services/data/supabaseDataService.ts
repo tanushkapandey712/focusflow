@@ -543,3 +543,25 @@ export const saveAllSessions = async (userId: string, sessions: StudySession[]):
     throwOnError(await sb().from("sessions").upsert(rows));
   }
 };
+
+// ---------------------------------------------------------------------------
+// ACCOUNT DELETION — wipe all user data from Supabase tables
+// ---------------------------------------------------------------------------
+
+/**
+ * Delete all data owned by a user across every table.
+ * Subjects cascade to units → topics automatically via FK constraints.
+ */
+export const deleteAllUserData = async (userId: string): Promise<void> => {
+  // Delete in dependency order (sessions/goals first, then subjects which cascade)
+  await Promise.all([
+    sb().from("sessions").delete().eq("user_id", userId),
+    sb().from("goals").delete().eq("user_id", userId),
+  ]);
+
+  // Subjects cascade deletes units → topics
+  await sb().from("subjects").delete().eq("user_id", userId);
+
+  // Finally, profile
+  await sb().from("profiles").delete().eq("user_id", userId);
+};
