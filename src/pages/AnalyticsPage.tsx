@@ -78,7 +78,7 @@ export const AnalyticsPage = () => {
 
   // Consistency (Streak)
   let currentStreak = 0;
-  let today = new Date();
+  const today = new Date();
   today.setHours(0,0,0,0);
   for (let i = 0; i < 365; i++) {
     const checkDate = new Date(today);

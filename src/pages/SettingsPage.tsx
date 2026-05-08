@@ -76,7 +76,7 @@ const DeleteAccountModal = ({ email, onConfirm, onCancel }: DeleteModalProps) =>
       // 1. Verify password using Supabase Auth
       try {
         await signInWithPassword(email, password);
-      } catch (authErr) {
+      } catch {
         throw new Error("Incorrect password.");
       }
 
@@ -237,13 +237,19 @@ export const SettingsPage = () => {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
-  const handleSaveProfile = () => {
+  const handleSaveProfile = async () => {
     if (!name.trim()) {
       setNameError("Display name is required.");
       return;
     }
-    setProfile({ ...profile, name: name.trim() });
-    setNameError("");
+    try {
+      await setProfile({ ...profile, name: name.trim() });
+      setNameError("");
+    } catch (saveError) {
+      const message = saveError instanceof Error ? saveError.message : "Unable to save profile.";
+      console.error("[FocusFlow] Settings profile save failed:", saveError);
+      setNameError(message);
+    }
   };
 
   // ── Logout ───────────────────────────────────────────────────────────────

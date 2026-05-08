@@ -33,6 +33,12 @@ export interface StudyTimerSessionValue {
     plannedMinutes: number;
     actualMinutes: number;
   };
+  getSessionResult: () => {
+    startedAt: Date;
+    endedAt: Date;
+    plannedMinutes: number;
+    actualMinutes: number;
+  };
   resetSessionForm: () => void;
 }
 

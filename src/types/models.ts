@@ -42,6 +42,7 @@ export interface UserProfile {
   institutionName?: string;
   classOrCourse?: string;
   fieldOfStudy?: string;
+  preferredStudyHours?: string;
   institutionStartTime?: string;
   institutionEndTime?: string;
   hasCompletedScheduleSetup: boolean;
@@ -85,11 +86,16 @@ export interface StudySessionSyllabusLink {
 export interface StudySession {
   id: string;
   subjectId: string;
+  unitId?: string;
+  topicId?: string;
   subjectName: string;
   startedAt: string;
   endedAt: string;
   plannedMinutes: number;
   actualMinutes: number;
+  durationMinutes?: number;
+  mode?: "pomodoro" | "deep-work" | "custom";
+  completed?: boolean;
   distractionCount?: number;
   distractionTags?: string[];
   tabSwitchCount?: number;

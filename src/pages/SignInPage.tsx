@@ -52,8 +52,8 @@ export const SignInPage = () => {
       };
 
       setStatus("verifying");
-      setProfile(nextProfile);
-      navigate(getNextAppRoute(nextProfile), { replace: true });
+      const savedProfile = await setProfile(nextProfile);
+      navigate(getNextAppRoute(savedProfile), { replace: true });
     };
 
     void completeSignIn().catch((sessionError: unknown) => {
@@ -135,8 +135,8 @@ export const SignInPage = () => {
         };
 
         setStatus("verifying");
-        setProfile(nextProfile);
-        navigate(getNextAppRoute(nextProfile), { replace: true });
+        const savedProfile = await setProfile(nextProfile);
+        navigate(getNextAppRoute(savedProfile), { replace: true });
       }
     } catch (submitError) {
       const message =
@@ -156,14 +156,14 @@ export const SignInPage = () => {
   };
 
   // ── Guest login ──────────────────────────────────────────────────────────
-  const handleGuestContinue = () => {
+  const handleGuestContinue = async () => {
     const nextProfile = {
       ...profile,
       email: "guest@focusflow.app",
       isAuthenticated: true,
     };
-    setProfile(nextProfile);
-    navigate(getNextAppRoute(nextProfile), { replace: true });
+    const savedProfile = await setProfile(nextProfile);
+    navigate(getNextAppRoute(savedProfile), { replace: true });
   };
 
   // ── Input class helper ──────────────────────────────────────────────────

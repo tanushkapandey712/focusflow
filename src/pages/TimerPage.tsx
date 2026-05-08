@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Camera, CameraOff, Play, Pause, Square, Sparkles, Maximize2, Minimize2 } from "lucide-react";
 import { FocusStatusBadge } from "../components/focus/FocusStatusBadge";
 import { Button } from "../components/ui";
@@ -17,7 +17,7 @@ import {
 import { cn } from "../lib/cn";
 
 export const TimerPage = () => {
-  const { subjects, addSession, updateSubject } = useFocusFlowData();
+  const { subjects, addSession, updateTopicInUnit } = useFocusFlowData();
   const {
     mode,
     setMode,
@@ -40,6 +40,7 @@ export const TimerPage = () => {
     resume,
     reset,
     end,
+    getSessionResult,
     resetSessionForm,
     totalSec,
     manualDistractionCount,
@@ -47,6 +48,8 @@ export const TimerPage = () => {
   
   const cameraTracking = useFocusTracking();
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [sessionSaveError, setSessionSaveError] = useState<string | null>(null);
+  const attemptedSessionSaveKeyRef = useRef<string | null>(null);
 
   const isSessionActive = status === "running" || status === "paused";
   const tabDistraction = useTabDistraction(isSessionActive);
@@ -98,72 +101,148 @@ export const TimerPage = () => {
     }
   }, [selectedSubject, selectedTopicId, selectedUnitId, setSelectedTopicId, setSelectedUnitId]);
 
-  const handleEndSession = () => {
-    if (!selectedSubject) return;
-    const result = end();
-    const endedAtIso = result.endedAt.toISOString();
-    const syllabusTopic = getSessionSyllabusLink(
+  const saveCompletedSession = useCallback(
+    async (result: {
+      startedAt: Date;
+      endedAt: Date;
+      plannedMinutes: number;
+      actualMinutes: number;
+    }) => {
+      if (!selectedSubject) {
+        throw new Error("Select a subject before saving the session.");
+      }
+
+      const endedAtIso = result.endedAt.toISOString();
+      const syllabusTopic = getSessionSyllabusLink(
+        selectedSubject,
+        selectedUnitId,
+        selectedTopicId,
+      );
+      const focusTrackingSummary = cameraTracking.finishSessionTracking({
+        startedAt: result.startedAt,
+        endedAt: result.endedAt,
+      });
+      const autoDistractionTags = [
+        ...(focusTrackingSummary && focusTrackingSummary.totalAwayEvents > 0 ? ["away from frame"] : []),
+        ...(focusTrackingSummary && focusTrackingSummary.lookingAwayEvents > 0 ? ["looked away"] : []),
+        ...(focusTrackingSummary && focusTrackingSummary.longEyeClosureEvents > 0 ? ["long eye closure"] : []),
+      ];
+      const allDistractionTags = Array.from(new Set([...distractionTags, ...autoDistractionTags]));
+      const tabDistractionSummary = tabDistraction.finalize();
+
+      const stabilityScore = computeStabilityScore({
+        actualMinutes: result.actualMinutes,
+        distractionCount: distractionTags.length + (focusTrackingSummary?.distractionEvents ?? 0) + manualDistractionCount,
+        tabSwitchCount: tabDistractionSummary.tabSwitchCount,
+        inactivityCount: tabDistractionSummary.inactivityCount,
+        tabAwayMs: tabDistractionSummary.tabAwayMs,
+        inactivityMs: tabDistractionSummary.inactivityMs,
+        cameraAwayEvents: focusTrackingSummary?.totalAwayEvents ?? 0,
+      });
+
+      const savedSession = await addSession({
+        id: crypto.randomUUID(),
+        subjectId: selectedSubject.id,
+        unitId: syllabusTopic?.unitId ?? selectedUnit?.id,
+        topicId: syllabusTopic?.topicId ?? selectedTopic?.id,
+        subjectName: selectedSubject.name,
+        startedAt: result.startedAt.toISOString(),
+        endedAt: endedAtIso,
+        plannedMinutes: result.plannedMinutes,
+        actualMinutes: result.actualMinutes,
+        durationMinutes: result.actualMinutes,
+        mode,
+        completed: true,
+        distractionCount: distractionTags.length + (focusTrackingSummary?.distractionEvents ?? 0) + manualDistractionCount,
+        distractionTags: allDistractionTags,
+        tabSwitchCount: tabDistractionSummary.tabSwitchCount,
+        tabAwayMs: tabDistractionSummary.tabAwayMs,
+        inactivityCount: tabDistractionSummary.inactivityCount,
+        inactivityMs: tabDistractionSummary.inactivityMs,
+        stabilityScore,
+        goal: goal.trim() || undefined,
+        syllabusTopic,
+        focusTracking: focusTrackingSummary ?? undefined,
+      });
+
+      const nextSyllabusUnits = applySessionToSubjectTopic(selectedSubject, {
+        syllabusTopic,
+        actualMinutes: savedSession.actualMinutes,
+        endedAt: endedAtIso,
+      });
+
+      if (nextSyllabusUnits !== selectedSubject.syllabusUnits && syllabusTopic) {
+        const updatedTopic = nextSyllabusUnits
+          .find((unit) => unit.id === syllabusTopic.unitId)
+          ?.topics.find((topic) => topic.id === syllabusTopic.topicId);
+
+        if (updatedTopic) {
+          await updateTopicInUnit(selectedSubject.id, syllabusTopic.unitId, syllabusTopic.topicId, {
+            status: updatedTopic.status,
+            studiedMinutes: updatedTopic.studiedMinutes,
+            studySessionsCount: updatedTopic.studySessionsCount,
+            lastStudiedAt: updatedTopic.lastStudiedAt,
+          });
+        }
+      }
+
+      if (isFullscreen) toggleFullscreen();
+      resetSessionForm();
+      setSessionSaveError(null);
+    },
+    [
+      addSession,
+      cameraTracking,
+      distractionTags,
+      goal,
+      isFullscreen,
+      manualDistractionCount,
+      mode,
+      resetSessionForm,
       selectedSubject,
+      selectedTopic,
+      selectedUnit,
+      selectedTopicId,
+      selectedUnitId,
+      tabDistraction,
+      updateTopicInUnit,
+    ],
+  );
+
+  useEffect(() => {
+    if (status !== "completed") return;
+
+    const result = getSessionResult();
+    const saveKey = [
+      result.startedAt.toISOString(),
+      result.endedAt.toISOString(),
+      selectedSubject?.id ?? "",
       selectedUnitId,
       selectedTopicId,
-    );
-    const focusTrackingSummary = cameraTracking.finishSessionTracking({
-      startedAt: result.startedAt,
-      endedAt: result.endedAt,
-    });
-    
-    const autoDistractionTags = [
-      ...(focusTrackingSummary && focusTrackingSummary.totalAwayEvents > 0 ? ["away from frame"] : []),
-      ...(focusTrackingSummary && focusTrackingSummary.lookingAwayEvents > 0 ? ["looked away"] : []),
-      ...(focusTrackingSummary && focusTrackingSummary.longEyeClosureEvents > 0 ? ["long eye closure"] : []),
-    ];
-    const allDistractionTags = Array.from(new Set([...distractionTags, ...autoDistractionTags]));
-    const tabDistractionSummary = tabDistraction.finalize();
+    ].join(":");
 
-    const stabilityScore = computeStabilityScore({
-      actualMinutes: result.actualMinutes,
-      distractionCount: distractionTags.length + (focusTrackingSummary?.distractionEvents ?? 0) + manualDistractionCount,
-      tabSwitchCount: tabDistractionSummary.tabSwitchCount,
-      inactivityCount: tabDistractionSummary.inactivityCount,
-      tabAwayMs: tabDistractionSummary.tabAwayMs,
-      inactivityMs: tabDistractionSummary.inactivityMs,
-      cameraAwayEvents: focusTrackingSummary?.totalAwayEvents ?? 0,
-    });
-
-    addSession({
-      id: crypto.randomUUID(),
-      subjectId: selectedSubject.id,
-      subjectName: selectedSubject.name,
-      startedAt: result.startedAt.toISOString(),
-      endedAt: endedAtIso,
-      plannedMinutes: result.plannedMinutes,
-      actualMinutes: result.actualMinutes,
-      distractionCount: distractionTags.length + (focusTrackingSummary?.distractionEvents ?? 0) + manualDistractionCount,
-      distractionTags: allDistractionTags,
-      tabSwitchCount: tabDistractionSummary.tabSwitchCount,
-      tabAwayMs: tabDistractionSummary.tabAwayMs,
-      inactivityCount: tabDistractionSummary.inactivityCount,
-      inactivityMs: tabDistractionSummary.inactivityMs,
-      stabilityScore,
-      goal: goal.trim() || undefined,
-      syllabusTopic,
-      focusTracking: focusTrackingSummary ?? undefined,
-    });
-
-    const nextSyllabusUnits = applySessionToSubjectTopic(selectedSubject, {
-      syllabusTopic,
-      actualMinutes: result.actualMinutes,
-      endedAt: endedAtIso,
-    });
-
-    if (nextSyllabusUnits !== selectedSubject.syllabusUnits) {
-      updateSubject(selectedSubject.id, {
-        syllabusUnits: nextSyllabusUnits,
-      });
+    if (attemptedSessionSaveKeyRef.current === saveKey) {
+      return;
     }
 
-    if (isFullscreen) toggleFullscreen();
-    resetSessionForm();
+    attemptedSessionSaveKeyRef.current = saveKey;
+    void saveCompletedSession(result).catch((err) => {
+      const message = err instanceof Error ? err.message : "Failed to save completed session.";
+      console.error("[FocusFlow] Completed session save failed:", err);
+      setSessionSaveError(message);
+    });
+  }, [
+    getSessionResult,
+    saveCompletedSession,
+    selectedSubject?.id,
+    selectedTopicId,
+    selectedUnitId,
+    status,
+  ]);
+
+  const handleEndSession = () => {
+    if (!selectedSubject) return;
+    end();
   };
 
   const toggleFullscreen = () => {
@@ -193,6 +272,11 @@ export const TimerPage = () => {
             <p className="text-sm font-medium text-slate-500 mb-1">Topic Covered</p>
             <p className="font-semibold text-slate-900 dark:text-slate-100">{selectedTopic?.title || "General Study"}</p>
           </div>
+          {sessionSaveError ? (
+            <p className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200">
+              {sessionSaveError}
+            </p>
+          ) : null}
           <Button className="w-full h-12 rounded-xl text-lg" onClick={() => {
             reset();
             resetSessionForm();
@@ -314,6 +398,8 @@ export const TimerPage = () => {
             {!isSessionActive ? (
               <Button 
                 onClick={() => {
+                  setSessionSaveError(null);
+                  attemptedSessionSaveKeyRef.current = null;
                   cameraTracking.beginSessionTracking();
                   start();
                 }} 

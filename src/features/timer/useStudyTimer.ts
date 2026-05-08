@@ -16,6 +16,7 @@ interface StudyTimerState {
   customMinutes: number;
   plannedSec: number;
   sessionStartedAtMs: number | null;
+  sessionEndedAtMs: number | null;
   activeSegmentStartedAtMs: number | null;
   accumulatedElapsedSec: number;
 }
@@ -51,6 +52,7 @@ const getInitialStudyTimerState = (presets: TimerPreset[]): StudyTimerState => {
       customMinutes: defaultCustomMinutes,
       plannedSec: defaultPlannedSec,
       sessionStartedAtMs: null,
+      sessionEndedAtMs: null,
       activeSegmentStartedAtMs: null,
       accumulatedElapsedSec: 0,
     };
@@ -76,6 +78,7 @@ const getInitialStudyTimerState = (presets: TimerPreset[]): StudyTimerState => {
       customMinutes: normalizedCustomMinutes,
       plannedSec: normalizedPlannedSec,
       sessionStartedAtMs: persistedState.sessionStartedAtMs,
+      sessionEndedAtMs: persistedState.sessionEndedAtMs ?? nowMs,
       activeSegmentStartedAtMs: null,
       accumulatedElapsedSec: normalizedPlannedSec,
     };
@@ -88,6 +91,7 @@ const getInitialStudyTimerState = (presets: TimerPreset[]): StudyTimerState => {
       customMinutes: normalizedCustomMinutes,
       plannedSec: normalizedPlannedSec,
       sessionStartedAtMs: persistedState.sessionStartedAtMs,
+      sessionEndedAtMs: null,
       activeSegmentStartedAtMs: null,
       accumulatedElapsedSec: persistedState.accumulatedElapsedSec,
     };
@@ -101,6 +105,7 @@ const getInitialStudyTimerState = (presets: TimerPreset[]): StudyTimerState => {
       plannedSec: normalizedPlannedSec,
       sessionStartedAtMs:
         persistedState.sessionStartedAtMs ?? persistedState.activeSegmentStartedAtMs,
+      sessionEndedAtMs: null,
       activeSegmentStartedAtMs: persistedState.activeSegmentStartedAtMs,
       accumulatedElapsedSec: persistedState.accumulatedElapsedSec,
     };
@@ -112,6 +117,7 @@ const getInitialStudyTimerState = (presets: TimerPreset[]): StudyTimerState => {
     customMinutes: normalizedCustomMinutes,
     plannedSec: getPresetSeconds(normalizedMode, presets, normalizedCustomMinutes),
     sessionStartedAtMs: null,
+    sessionEndedAtMs: null,
     activeSegmentStartedAtMs: null,
     accumulatedElapsedSec: 0,
   };
@@ -174,6 +180,7 @@ export const useStudyTimer = ({ presets }: UseStudyTimerOptions) => {
         ? {
             ...current,
             status: "completed",
+            sessionEndedAtMs: Date.now(),
             activeSegmentStartedAtMs: null,
             accumulatedElapsedSec: current.plannedSec,
           }
@@ -190,6 +197,7 @@ export const useStudyTimer = ({ presets }: UseStudyTimerOptions) => {
             customMinutes: timerState.customMinutes,
             plannedSec: timerState.plannedSec,
             sessionStartedAtMs: timerState.sessionStartedAtMs,
+            sessionEndedAtMs: timerState.sessionEndedAtMs,
             activeSegmentStartedAtMs:
               timerState.status === "running" ? timerState.activeSegmentStartedAtMs : null,
             isPaused: timerState.status === "paused",
@@ -207,6 +215,7 @@ export const useStudyTimer = ({ presets }: UseStudyTimerOptions) => {
     timerState.customMinutes,
     timerState.mode,
     timerState.plannedSec,
+    timerState.sessionEndedAtMs,
     timerState.sessionStartedAtMs,
     timerState.status,
   ]);
@@ -238,6 +247,7 @@ export const useStudyTimer = ({ presets }: UseStudyTimerOptions) => {
         status: "running",
         plannedSec: getPresetSeconds(current.mode, presets, current.customMinutes),
         sessionStartedAtMs: startedAtMs,
+        sessionEndedAtMs: null,
         activeSegmentStartedAtMs: startedAtMs,
         accumulatedElapsedSec: 0,
       };
@@ -286,14 +296,15 @@ export const useStudyTimer = ({ presets }: UseStudyTimerOptions) => {
       status: "idle",
       plannedSec: getPresetSeconds(current.mode, presets, current.customMinutes),
       sessionStartedAtMs: null,
+      sessionEndedAtMs: null,
       activeSegmentStartedAtMs: null,
       accumulatedElapsedSec: 0,
     }));
     setNowMs(Date.now());
   }, [presets]);
 
-  const end = useCallback(() => {
-    const endedAt = new Date();
+  const getSessionResult = useCallback(() => {
+    const endedAt = new Date(timerState.sessionEndedAtMs ?? Date.now());
     const finalElapsedSec = Math.min(
       timerState.plannedSec,
       timerState.status === "running"
@@ -305,13 +316,6 @@ export const useStudyTimer = ({ presets }: UseStudyTimerOptions) => {
         : timerState.accumulatedElapsedSec,
     );
 
-    setTimerState((current) => ({
-      ...current,
-      status: "completed",
-      activeSegmentStartedAtMs: null,
-      accumulatedElapsedSec: finalElapsedSec,
-    }));
-
     return {
       startedAt: timerState.sessionStartedAtMs ? new Date(timerState.sessionStartedAtMs) : endedAt,
       endedAt,
@@ -322,9 +326,28 @@ export const useStudyTimer = ({ presets }: UseStudyTimerOptions) => {
     timerState.accumulatedElapsedSec,
     timerState.activeSegmentStartedAtMs,
     timerState.plannedSec,
+    timerState.sessionEndedAtMs,
     timerState.sessionStartedAtMs,
     timerState.status,
   ]);
+
+  const end = useCallback(() => {
+    const endedAtMs = Date.now();
+    const result = getSessionResult();
+
+    setTimerState((current) => ({
+      ...current,
+      status: "completed",
+      sessionEndedAtMs: endedAtMs,
+      activeSegmentStartedAtMs: null,
+      accumulatedElapsedSec: Math.max(1, result.actualMinutes) * 60,
+    }));
+
+    return {
+      ...result,
+      endedAt: new Date(endedAtMs),
+    };
+  }, [getSessionResult]);
 
   return {
     mode: timerState.mode,
@@ -336,6 +359,7 @@ export const useStudyTimer = ({ presets }: UseStudyTimerOptions) => {
     setCustomMinutes,
     activePreset,
     totalSec,
+    getSessionResult,
     start,
     pause,
     resume,

@@ -68,6 +68,7 @@ export const StudyTimerProvider = ({ children }: PropsWithChildren) => {
       resume: timer.resume,
       reset: timer.reset,
       end: timer.end,
+      getSessionResult: timer.getSessionResult,
       resetSessionForm,
     }),
     [
@@ -91,6 +92,7 @@ export const StudyTimerProvider = ({ children }: PropsWithChildren) => {
       timer.start,
       timer.status,
       timer.totalSec,
+      timer.getSessionResult,
       resetSessionForm,
     ],
   );

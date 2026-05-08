@@ -9,6 +9,7 @@ export interface FocusFlowDataSource {
     profile: UserProfile;
     goals: StudyGoal[];
   };
+  saveSessions: (sessions: StudySession[]) => StudySession[];
   saveSession: (session: StudySession) => StudySession[];
   updateSession: (sessionId: string, patch: Partial<StudySession>) => StudySession[];
   getSubjectSyllabus: (subjectId: string) => SyllabusUnit[];
@@ -28,6 +29,7 @@ export const localDataSource: FocusFlowDataSource = {
     profile: focusFlowStorage.getProfile(),
     goals: focusFlowStorage.getGoals(),
   }),
+  saveSessions: (sessions) => focusFlowStorage.saveSessions(sessions),
   saveSession: (session) => focusFlowStorage.saveSession(session),
   updateSession: (sessionId, patch) => focusFlowStorage.updateSession(sessionId, patch),
   getSubjectSyllabus: (subjectId) => focusFlowStorage.getSubjectSyllabus(subjectId),

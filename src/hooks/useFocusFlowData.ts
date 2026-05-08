@@ -5,6 +5,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type PropsWithChildren,
 } from "react";
@@ -37,11 +38,13 @@ interface FocusFlowDataValue {
   profile: UserProfile;
   goals: StudyGoal[];
   isLoading: boolean;
+  isAuthReady: boolean;
   syncError: string | null;
   /** The Supabase auth user ID, or null if not signed in via Supabase. */
   authUserId: string | null;
-  addSession: (session: StudySession) => void;
-  updateSession: (sessionId: string, patch: Partial<StudySession>) => void;
+  addSession: (session: StudySession) => Promise<StudySession>;
+  updateSession: (sessionId: string, patch: Partial<StudySession>) => Promise<StudySession>;
+  deleteSession: (sessionId: string) => Promise<void>;
   addSubject: (subject: Subject) => Promise<Subject>;
   addUnitToSubject: (subjectId: string, unit: SyllabusUnit) => Promise<SyllabusUnit>;
   addTopicToUnit: (
@@ -49,13 +52,29 @@ interface FocusFlowDataValue {
     unitId: string,
     topic: SyllabusTopic,
   ) => Promise<SyllabusTopic>;
-  updateSubject: (subjectId: string, patch: Partial<Subject>) => void;
-  deleteSubject: (subjectId: string) => void;
+  updateSubject: (subjectId: string, patch: Partial<Subject>) => Promise<Subject>;
+  deleteSubject: (subjectId: string) => Promise<void>;
+  updateUnitInSubject: (
+    subjectId: string,
+    unitId: string,
+    patch: Partial<SyllabusUnit>,
+  ) => Promise<SyllabusUnit>;
+  deleteUnitFromSubject: (subjectId: string, unitId: string) => Promise<void>;
+  updateTopicInUnit: (
+    subjectId: string,
+    unitId: string,
+    topicId: string,
+    patch: Partial<SyllabusTopic>,
+  ) => Promise<SyllabusTopic>;
+  deleteTopicFromUnit: (subjectId: string, unitId: string, topicId: string) => Promise<void>;
+  addGoal: (goal: StudyGoal) => Promise<StudyGoal>;
+  updateGoal: (goalId: string, patch: Partial<StudyGoal>) => Promise<StudyGoal>;
+  deleteGoal: (goalId: string) => Promise<void>;
   saveReviewedSyllabus: (params: SaveReviewedSyllabusParams) => Promise<void>;
   getSubjectSyllabus: (subjectId: string) => SyllabusUnit[];
-  setSubjects: (nextSubjects: Subject[]) => void;
-  setProfile: (nextProfile: UserProfile) => void;
-  setGoals: (nextGoals: StudyGoal[]) => void;
+  setSubjects: (nextSubjects: Subject[]) => Promise<Subject[]>;
+  setProfile: (nextProfile: UserProfile) => Promise<UserProfile>;
+  setGoals: (nextGoals: StudyGoal[]) => Promise<StudyGoal[]>;
   summary: DashboardSummary;
   refreshFromCloud: () => Promise<void>;
 }
@@ -74,29 +93,76 @@ export const FocusFlowDataProvider = ({ children }: PropsWithChildren) => {
 
   // Sync state
   const [isLoading, setIsLoading] = useState(false);
+  const [isAuthReady, setIsAuthReady] = useState(!isSupabaseConfigured);
   const [syncError, setSyncError] = useState<string | null>(null);
   const [authUserId, setAuthUserId] = useState<string | null>(null);
   const [showMigration, setShowMigration] = useState(false);
+  const authUserIdRef = useRef<string | null>(null);
+  const syllabusRefreshTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const goalsRefreshTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const sessionsRefreshTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const profileRefreshTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isCloudMode = Boolean(authUserId);
+
+  useEffect(() => {
+    authUserIdRef.current = authUserId;
+  }, [authUserId]);
 
   // -------------------------------------------------------------------------
   // Auth listener — get user ID when signed in
   // -------------------------------------------------------------------------
   useEffect(() => {
-    if (!isSupabaseConfigured) return;
+    if (!isSupabaseConfigured) {
+      setIsAuthReady(true);
+      return;
+    }
 
     const client = getSupabaseClient();
+    let isMounted = true;
 
-    // Check current session
-    client.auth.getUser().then(({ data: { user } }) => {
-      setAuthUserId(user?.id ?? null);
-    });
+    client.auth
+      .getSession()
+      .then(({ data: { session }, error }) => {
+        if (!isMounted) return;
+
+        if (error) {
+          console.error("[FocusFlow] Auth session restore failed:", error);
+          setSyncError(error.message);
+        }
+
+        const nextUserId = session?.user?.id ?? null;
+        setAuthUserId(nextUserId);
+        setIsLoading(Boolean(nextUserId));
+        setIsAuthReady(true);
+      })
+      .catch((error: unknown) => {
+        if (!isMounted) return;
+
+        const message = error instanceof Error ? error.message : "Unable to restore auth session.";
+        console.error("[FocusFlow] Auth session restore failed:", error);
+        setSyncError(message);
+        setIsLoading(false);
+        setIsAuthReady(true);
+      });
 
     // Listen for auth changes
     const { data: { subscription } } = client.auth.onAuthStateChange((_event, session) => {
       const nextUserId = session?.user?.id ?? null;
+
+      if (nextUserId) {
+        if (authUserIdRef.current !== nextUserId) {
+          setIsLoading(true);
+        }
+
+        setAuthUserId(nextUserId);
+        setIsAuthReady(true);
+        return;
+      }
+
       setAuthUserId(nextUserId);
+      setIsLoading(false);
+      setIsAuthReady(true);
       if (!nextUserId) {
         // Logged out — explicitly reset to an unauthenticated state
         const emptyData = localDataSource.loadInitialData();
@@ -112,7 +178,10 @@ export const FocusFlowDataProvider = ({ children }: PropsWithChildren) => {
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   // -------------------------------------------------------------------------
@@ -135,16 +204,12 @@ export const FocusFlowDataProvider = ({ children }: PropsWithChildren) => {
       } else {
         // First-time user — create profile in Supabase from current local profile
         const currentProfile = localDataSource.loadInitialData().profile;
-        await supabaseService.upsertProfile(userId, {
+        const createdProfile = await supabaseService.upsertProfile(userId, {
           ...currentProfile,
           id: userId,
           isAuthenticated: true,
         });
-        setProfileState({
-          ...currentProfile,
-          id: userId,
-          isAuthenticated: true,
-        });
+        setProfileState(createdProfile);
       }
 
       setSubjectsState(cloudSubjects);
@@ -159,40 +224,232 @@ export const FocusFlowDataProvider = ({ children }: PropsWithChildren) => {
     }
   }, []);
 
+  const refetchProfileData = useCallback(async (userId: string) => {
+    try {
+      const cloudProfile = await supabaseService.fetchUserProfile(userId);
+
+      if (cloudProfile) {
+        setProfileState(cloudProfile);
+      }
+
+      setSyncError(null);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to sync profile.";
+      console.error("[FocusFlow] Profile realtime refresh failed:", err);
+      setSyncError(message);
+    }
+  }, []);
+
+  const refetchSyllabusData = useCallback(async (userId: string) => {
+    try {
+      const cloudSubjects = await supabaseService.fetchSubjects(userId);
+      setSubjectsState(cloudSubjects);
+      setSyncError(null);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to sync syllabus data.";
+      console.error("[FocusFlow] Syllabus realtime refresh failed:", err);
+      setSyncError(message);
+    }
+  }, []);
+
+  const refetchGoalsData = useCallback(async (userId: string) => {
+    try {
+      const cloudGoals = await supabaseService.fetchGoals(userId);
+      setGoalsState(cloudGoals);
+      setSyncError(null);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to sync goals.";
+      console.error("[FocusFlow] Goals realtime refresh failed:", err);
+      setSyncError(message);
+    }
+  }, []);
+
+  const refetchSessionsData = useCallback(async (userId: string) => {
+    try {
+      const cloudSessions = await supabaseService.fetchSessions(userId);
+      setSessions(cloudSessions);
+      setSyncError(null);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to sync sessions.";
+      console.error("[FocusFlow] Sessions realtime refresh failed:", err);
+      setSyncError(message);
+    }
+  }, []);
+
+  const scheduleSyllabusRefetch = useCallback(
+    (userId: string) => {
+      if (syllabusRefreshTimeoutRef.current) {
+        clearTimeout(syllabusRefreshTimeoutRef.current);
+      }
+
+      syllabusRefreshTimeoutRef.current = setTimeout(() => {
+        syllabusRefreshTimeoutRef.current = null;
+        void refetchSyllabusData(userId);
+      }, 250);
+    },
+    [refetchSyllabusData],
+  );
+
+  const scheduleProfileRefetch = useCallback(
+    (userId: string) => {
+      if (profileRefreshTimeoutRef.current) {
+        clearTimeout(profileRefreshTimeoutRef.current);
+      }
+
+      profileRefreshTimeoutRef.current = setTimeout(() => {
+        profileRefreshTimeoutRef.current = null;
+        void refetchProfileData(userId);
+      }, 250);
+    },
+    [refetchProfileData],
+  );
+
+  const scheduleGoalsRefetch = useCallback(
+    (userId: string) => {
+      if (goalsRefreshTimeoutRef.current) {
+        clearTimeout(goalsRefreshTimeoutRef.current);
+      }
+
+      goalsRefreshTimeoutRef.current = setTimeout(() => {
+        goalsRefreshTimeoutRef.current = null;
+        void refetchGoalsData(userId);
+      }, 250);
+    },
+    [refetchGoalsData],
+  );
+
+  const scheduleSessionsRefetch = useCallback(
+    (userId: string) => {
+      if (sessionsRefreshTimeoutRef.current) {
+        clearTimeout(sessionsRefreshTimeoutRef.current);
+      }
+
+      sessionsRefreshTimeoutRef.current = setTimeout(() => {
+        sessionsRefreshTimeoutRef.current = null;
+        void refetchSessionsData(userId);
+      }, 250);
+    },
+    [refetchSessionsData],
+  );
+
   useEffect(() => {
     if (!authUserId) return;
 
     // Check for migration prompt first
     if (shouldShowMigrationPrompt()) {
+      setIsLoading(false);
       setShowMigration(true);
     } else {
       hydrateFromCloud(authUserId);
     }
-
-    // Subscribe to realtime changes for multi-device sync
-    if (isSupabaseConfigured) {
-      const client = getSupabaseClient();
-      const channel = client
-        .channel(`user-data-sync-${authUserId}`)
-        .on(
-          "postgres_changes",
-          {
-            event: "*",
-            schema: "public",
-            filter: `user_id=eq.${authUserId}`,
-          },
-          () => {
-            // Refetch data when a mutation occurs on another device
-            hydrateFromCloud(authUserId);
-          }
-        )
-        .subscribe();
-
-      return () => {
-        client.removeChannel(channel);
-      };
-    }
   }, [authUserId, hydrateFromCloud]);
+
+  useEffect(() => {
+    if (!authUserId || !isSupabaseConfigured) return;
+
+    const client = getSupabaseClient();
+    const handleSyllabusChange = () => scheduleSyllabusRefetch(authUserId);
+    const handleProfileChange = () => scheduleProfileRefetch(authUserId);
+    const handleGoalsChange = () => scheduleGoalsRefetch(authUserId);
+    const handleSessionsChange = () => scheduleSessionsRefetch(authUserId);
+    const channel = client
+      .channel(`focusflow-data-sync-${authUserId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "profiles",
+          filter: `user_id=eq.${authUserId}`,
+        },
+        handleProfileChange,
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "subjects",
+          filter: `user_id=eq.${authUserId}`,
+        },
+        handleSyllabusChange,
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "units",
+          filter: `user_id=eq.${authUserId}`,
+        },
+        handleSyllabusChange,
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "topics",
+          filter: `user_id=eq.${authUserId}`,
+        },
+        handleSyllabusChange,
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "goals",
+          filter: `user_id=eq.${authUserId}`,
+        },
+        handleGoalsChange,
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "sessions",
+          filter: `user_id=eq.${authUserId}`,
+        },
+        handleSessionsChange,
+      )
+      .subscribe((status, error) => {
+        if (error) {
+          const message = error.message || "Realtime data sync failed.";
+          console.error("[FocusFlow] Realtime subscription failed:", error);
+          setSyncError(message);
+        } else if (status === "SUBSCRIBED") {
+          setSyncError(null);
+        }
+      });
+
+    return () => {
+      if (syllabusRefreshTimeoutRef.current) {
+        clearTimeout(syllabusRefreshTimeoutRef.current);
+        syllabusRefreshTimeoutRef.current = null;
+      }
+      if (goalsRefreshTimeoutRef.current) {
+        clearTimeout(goalsRefreshTimeoutRef.current);
+        goalsRefreshTimeoutRef.current = null;
+      }
+      if (sessionsRefreshTimeoutRef.current) {
+        clearTimeout(sessionsRefreshTimeoutRef.current);
+        sessionsRefreshTimeoutRef.current = null;
+      }
+      if (profileRefreshTimeoutRef.current) {
+        clearTimeout(profileRefreshTimeoutRef.current);
+        profileRefreshTimeoutRef.current = null;
+      }
+      void client.removeChannel(channel);
+    };
+  }, [
+    authUserId,
+    scheduleGoalsRefetch,
+    scheduleProfileRefetch,
+    scheduleSessionsRefetch,
+    scheduleSyllabusRefetch,
+  ]);
 
   const refreshFromCloud = useCallback(async () => {
     if (authUserId) {
@@ -218,46 +475,127 @@ export const FocusFlowDataProvider = ({ children }: PropsWithChildren) => {
   }, []);
 
   // -------------------------------------------------------------------------
-  // Background sync helper — wraps Supabase calls with error handling
-  // -------------------------------------------------------------------------
-  const syncToCloud = useCallback(
-    async (operation: (userId: string) => Promise<void>) => {
-      if (!authUserId) return;
-      try {
-        await operation(authUserId);
-      } catch (err) {
-        console.error("[FocusFlow] Sync error:", err);
-        setSyncError(err instanceof Error ? err.message : "Sync failed.");
-      }
-    },
-    [authUserId],
-  );
-
-  // -------------------------------------------------------------------------
-  // CRUD operations — update local state first (optimistic), then sync to cloud
+  // CRUD operations
   // -------------------------------------------------------------------------
   const addSession = useCallback(
-    (session: StudySession) => {
-      setSessions((prev) => [...prev, session]);
-      if (authUserId) {
-        syncToCloud((userId) => supabaseService.createSession(userId, session));
-      } else {
-        localDataSource.saveSession(session);
+    async (session: StudySession) => {
+      const sessionUserId = await getSessionUserId();
+
+      if (sessionUserId) {
+        try {
+          const createdSession = await supabaseService.createSession(sessionUserId, session);
+          setAuthUserId(sessionUserId);
+          setSyncError(null);
+          setSessions((prev) => [
+            createdSession,
+            ...prev.filter((item) => item.id !== createdSession.id),
+          ]);
+          return createdSession;
+        } catch (err) {
+          const message =
+            err instanceof Error ? err.message : "Failed to create session in Supabase.";
+          console.error("[FocusFlow] Session create failed:", err);
+          setSyncError(message);
+          throw err instanceof Error ? err : new Error(message);
+        }
       }
+
+      const isGuestMode = !profile.email || profile.email === "guest@focusflow.app";
+      if (!isSupabaseConfigured || isGuestMode) {
+        const nextSessions = localDataSource.saveSession(session);
+        setSessions(nextSessions);
+        setSyncError(null);
+        return session;
+      }
+
+      const authError = new Error("User not signed in.");
+      console.error("[FocusFlow] Session create blocked: no Supabase session found.");
+      setSyncError(authError.message);
+      throw authError;
     },
-    [authUserId, syncToCloud],
+    [getSessionUserId, profile.email],
   );
 
   const updateSession = useCallback(
-    (sessionId: string, patch: Partial<StudySession>) => {
-      setSessions((prev) => prev.map((s) => (s.id === sessionId ? { ...s, ...patch } : s)));
-      if (authUserId) {
-        syncToCloud((userId) => supabaseService.updateSession(userId, sessionId, patch));
-      } else {
-        localDataSource.updateSession(sessionId, patch);
+    async (sessionId: string, patch: Partial<StudySession>) => {
+      const sessionUserId = await getSessionUserId();
+
+      if (sessionUserId) {
+        try {
+          const updatedSession = await supabaseService.updateSession(sessionUserId, sessionId, patch);
+          setAuthUserId(sessionUserId);
+          setSyncError(null);
+          setSessions((prev) =>
+            prev.map((session) => (session.id === sessionId ? updatedSession : session)),
+          );
+          return updatedSession;
+        } catch (err) {
+          const message =
+            err instanceof Error ? err.message : "Failed to update session in Supabase.";
+          console.error("[FocusFlow] Session update failed:", err);
+          setSyncError(message);
+          throw err instanceof Error ? err : new Error(message);
+        }
       }
+
+      const isGuestMode = !profile.email || profile.email === "guest@focusflow.app";
+      if (!isSupabaseConfigured || isGuestMode) {
+        const nextSessions = localDataSource.updateSession(sessionId, patch);
+        const updatedSession = nextSessions.find((session) => session.id === sessionId);
+
+        if (!updatedSession) {
+          throw new Error("Session not found.");
+        }
+
+        setSessions(nextSessions);
+        setSyncError(null);
+        return updatedSession;
+      }
+
+      const authError = new Error("User not signed in.");
+      console.error("[FocusFlow] Session update blocked: no Supabase session found.");
+      setSyncError(authError.message);
+      throw authError;
     },
-    [authUserId, syncToCloud],
+    [getSessionUserId, profile.email],
+  );
+
+  const deleteSession = useCallback(
+    async (sessionId: string) => {
+      const sessionUserId = await getSessionUserId();
+
+      if (sessionUserId) {
+        try {
+          await supabaseService.deleteSession(sessionUserId, sessionId);
+          const cloudSessions = await supabaseService.fetchSessions(sessionUserId);
+          setAuthUserId(sessionUserId);
+          setSyncError(null);
+          setSessions(cloudSessions);
+          return;
+        } catch (err) {
+          const message =
+            err instanceof Error ? err.message : "Failed to delete session in Supabase.";
+          console.error("[FocusFlow] Session delete failed:", err);
+          setSyncError(message);
+          throw err instanceof Error ? err : new Error(message);
+        }
+      }
+
+      const isGuestMode = !profile.email || profile.email === "guest@focusflow.app";
+      if (!isSupabaseConfigured || isGuestMode) {
+        const nextSessions = sessions.filter((session) => session.id !== sessionId);
+        localDataSource.saveSessions(nextSessions);
+        setSessions(nextSessions);
+        setSyncError(null);
+        return;
+      }
+
+      const authError = new Error("User not signed in.");
+      console.error("[FocusFlow] Session delete blocked: no Supabase session found.");
+      setSyncError(authError.message);
+      throw authError;
+    },
+    [getSessionUserId, profile.email, sessions],
   );
 
   const addSubject = useCallback(
@@ -297,15 +635,47 @@ export const FocusFlowDataProvider = ({ children }: PropsWithChildren) => {
   );
 
   const updateSubject = useCallback(
-    (subjectId: string, patch: Partial<Subject>) => {
-      setSubjectsState((prev) => prev.map((s) => (s.id === subjectId ? { ...s, ...patch } : s)));
-      if (authUserId) {
-        syncToCloud((userId) => supabaseService.updateSubject(userId, subjectId, patch));
-      } else {
-        localDataSource.updateSubject(subjectId, patch);
+    async (subjectId: string, patch: Partial<Subject>) => {
+      const sessionUserId = await getSessionUserId();
+
+      if (sessionUserId) {
+        try {
+          const updatedSubject = await supabaseService.updateSubject(sessionUserId, subjectId, patch);
+          setAuthUserId(sessionUserId);
+          setSyncError(null);
+          setSubjectsState((prev) =>
+            prev.map((subject) => (subject.id === subjectId ? updatedSubject : subject)),
+          );
+          return updatedSubject;
+        } catch (err) {
+          const message =
+            err instanceof Error ? err.message : "Failed to update subject in Supabase.";
+          console.error("[FocusFlow] Subject update failed:", err);
+          setSyncError(message);
+          throw err instanceof Error ? err : new Error(message);
+        }
       }
+
+      const isGuestMode = !profile.email || profile.email === "guest@focusflow.app";
+      if (!isSupabaseConfigured || isGuestMode) {
+        const nextSubjects = localDataSource.updateSubject(subjectId, patch);
+        const updatedSubject = nextSubjects.find((subject) => subject.id === subjectId);
+
+        if (!updatedSubject) {
+          throw new Error("Subject not found.");
+        }
+
+        setSubjectsState(nextSubjects);
+        setSyncError(null);
+        return updatedSubject;
+      }
+
+      const authError = new Error("User not signed in.");
+      console.error("[FocusFlow] Subject update blocked: no Supabase session found.");
+      setSyncError(authError.message);
+      throw authError;
     },
-    [authUserId, syncToCloud],
+    [getSessionUserId, profile.email],
   );
 
   const addUnitToSubject = useCallback(
@@ -433,17 +803,396 @@ export const FocusFlowDataProvider = ({ children }: PropsWithChildren) => {
   );
 
   const deleteSubject = useCallback(
-    (subjectId: string) => {
-      setSubjectsState((prev) => prev.filter((s) => s.id !== subjectId));
-      if (authUserId) {
-        syncToCloud((userId) => supabaseService.deleteSubject(userId, subjectId));
-      } else {
-        const current = localDataSource.loadInitialData().subjects;
-        const next = current.filter((s) => s.id !== subjectId);
-        localDataSource.saveSubjects(next);
+    async (subjectId: string) => {
+      const sessionUserId = await getSessionUserId();
+
+      if (sessionUserId) {
+        try {
+          await supabaseService.deleteSubject(sessionUserId, subjectId);
+          const cloudSubjects = await supabaseService.fetchSubjects(sessionUserId);
+          setAuthUserId(sessionUserId);
+          setSyncError(null);
+          setSubjectsState(cloudSubjects);
+          return;
+        } catch (err) {
+          const message =
+            err instanceof Error ? err.message : "Failed to delete subject in Supabase.";
+          console.error("[FocusFlow] Subject delete failed:", err);
+          setSyncError(message);
+          throw err instanceof Error ? err : new Error(message);
+        }
       }
+
+      const isGuestMode = !profile.email || profile.email === "guest@focusflow.app";
+      if (!isSupabaseConfigured || isGuestMode) {
+        const current = localDataSource.loadInitialData().subjects;
+        const nextSubjects = current.filter((subject) => subject.id !== subjectId);
+        localDataSource.saveSubjects(nextSubjects);
+        setSubjectsState(nextSubjects);
+        setSyncError(null);
+        return;
+      }
+
+      const authError = new Error("User not signed in.");
+      console.error("[FocusFlow] Subject delete blocked: no Supabase session found.");
+      setSyncError(authError.message);
+      throw authError;
     },
-    [authUserId, syncToCloud],
+    [getSessionUserId, profile.email],
+  );
+
+  const updateUnitInSubject = useCallback(
+    async (subjectId: string, unitId: string, patch: Partial<SyllabusUnit>) => {
+      const sessionUserId = await getSessionUserId();
+
+      if (sessionUserId) {
+        try {
+          const updatedUnit = await supabaseService.updateUnit(sessionUserId, unitId, patch);
+          setAuthUserId(sessionUserId);
+          setSyncError(null);
+          setSubjectsState((prev) =>
+            prev.map((subject) =>
+              subject.id === subjectId
+                ? {
+                    ...subject,
+                    syllabusUnits: subject.syllabusUnits.map((unit) =>
+                      unit.id === unitId ? updatedUnit : unit,
+                    ),
+                  }
+                : subject,
+            ),
+          );
+          return updatedUnit;
+        } catch (err) {
+          const message = err instanceof Error ? err.message : "Failed to update unit in Supabase.";
+          console.error("[FocusFlow] Unit update failed:", err);
+          setSyncError(message);
+          throw err instanceof Error ? err : new Error(message);
+        }
+      }
+
+      const isGuestMode = !profile.email || profile.email === "guest@focusflow.app";
+      if (!isSupabaseConfigured || isGuestMode) {
+        const subject = subjects.find((item) => item.id === subjectId);
+        const updatedUnit = subject?.syllabusUnits.find((unit) => unit.id === unitId);
+
+        if (!subject || !updatedUnit) {
+          throw new Error("Unit not found.");
+        }
+
+        const nextUnits = subject.syllabusUnits.map((unit) =>
+          unit.id === unitId ? { ...unit, ...patch } : unit,
+        );
+        const nextSubjects = localDataSource.updateSubject(subjectId, { syllabusUnits: nextUnits });
+        const savedUnit = nextUnits.find((unit) => unit.id === unitId);
+
+        if (!savedUnit) {
+          throw new Error("Unit not found.");
+        }
+
+        setSubjectsState(nextSubjects);
+        setSyncError(null);
+        return savedUnit;
+      }
+
+      const authError = new Error("User not signed in.");
+      console.error("[FocusFlow] Unit update blocked: no Supabase session found.");
+      setSyncError(authError.message);
+      throw authError;
+    },
+    [getSessionUserId, profile.email, subjects],
+  );
+
+  const deleteUnitFromSubject = useCallback(
+    async (subjectId: string, unitId: string) => {
+      const sessionUserId = await getSessionUserId();
+
+      if (sessionUserId) {
+        try {
+          await supabaseService.deleteUnit(sessionUserId, unitId);
+          const cloudSubjects = await supabaseService.fetchSubjects(sessionUserId);
+          setAuthUserId(sessionUserId);
+          setSyncError(null);
+          setSubjectsState(cloudSubjects);
+          return;
+        } catch (err) {
+          const message = err instanceof Error ? err.message : "Failed to delete unit in Supabase.";
+          console.error("[FocusFlow] Unit delete failed:", err);
+          setSyncError(message);
+          throw err instanceof Error ? err : new Error(message);
+        }
+      }
+
+      const isGuestMode = !profile.email || profile.email === "guest@focusflow.app";
+      if (!isSupabaseConfigured || isGuestMode) {
+        const subject = subjects.find((item) => item.id === subjectId);
+
+        if (!subject) {
+          throw new Error("Subject not found.");
+        }
+
+        const nextUnits = subject.syllabusUnits.filter((unit) => unit.id !== unitId);
+        const nextSubjects = localDataSource.updateSubject(subjectId, { syllabusUnits: nextUnits });
+        setSubjectsState(nextSubjects);
+        setSyncError(null);
+        return;
+      }
+
+      const authError = new Error("User not signed in.");
+      console.error("[FocusFlow] Unit delete blocked: no Supabase session found.");
+      setSyncError(authError.message);
+      throw authError;
+    },
+    [getSessionUserId, profile.email, subjects],
+  );
+
+  const updateTopicInUnit = useCallback(
+    async (
+      subjectId: string,
+      unitId: string,
+      topicId: string,
+      patch: Partial<SyllabusTopic>,
+    ) => {
+      const sessionUserId = await getSessionUserId();
+
+      if (sessionUserId) {
+        try {
+          const updatedTopic = await supabaseService.updateTopic(sessionUserId, topicId, patch);
+          setAuthUserId(sessionUserId);
+          setSyncError(null);
+          setSubjectsState((prev) =>
+            prev.map((subject) =>
+              subject.id === subjectId
+                ? {
+                    ...subject,
+                    syllabusUnits: subject.syllabusUnits.map((unit) =>
+                      unit.id === unitId
+                        ? {
+                            ...unit,
+                            topics: unit.topics.map((topic) =>
+                              topic.id === topicId ? updatedTopic : topic,
+                            ),
+                          }
+                        : unit,
+                    ),
+                  }
+                : subject,
+            ),
+          );
+          return updatedTopic;
+        } catch (err) {
+          const message =
+            err instanceof Error ? err.message : "Failed to update topic in Supabase.";
+          console.error("[FocusFlow] Topic update failed:", err);
+          setSyncError(message);
+          throw err instanceof Error ? err : new Error(message);
+        }
+      }
+
+      const isGuestMode = !profile.email || profile.email === "guest@focusflow.app";
+      if (!isSupabaseConfigured || isGuestMode) {
+        const subject = subjects.find((item) => item.id === subjectId);
+        const unit = subject?.syllabusUnits.find((item) => item.id === unitId);
+
+        if (!subject || !unit) {
+          throw new Error("Unit not found.");
+        }
+
+        const nextUnits = subject.syllabusUnits.map((entry) =>
+          entry.id === unitId
+            ? {
+                ...entry,
+                topics: entry.topics.map((topic) =>
+                  topic.id === topicId ? { ...topic, ...patch } : topic,
+                ),
+              }
+            : entry,
+        );
+        const nextSubjects = localDataSource.updateSubject(subjectId, { syllabusUnits: nextUnits });
+        const updatedTopic = nextUnits
+          .find((entry) => entry.id === unitId)
+          ?.topics.find((topic) => topic.id === topicId);
+
+        if (!updatedTopic) {
+          throw new Error("Topic not found.");
+        }
+
+        setSubjectsState(nextSubjects);
+        setSyncError(null);
+        return updatedTopic;
+      }
+
+      const authError = new Error("User not signed in.");
+      console.error("[FocusFlow] Topic update blocked: no Supabase session found.");
+      setSyncError(authError.message);
+      throw authError;
+    },
+    [getSessionUserId, profile.email, subjects],
+  );
+
+  const deleteTopicFromUnit = useCallback(
+    async (subjectId: string, unitId: string, topicId: string) => {
+      const sessionUserId = await getSessionUserId();
+
+      if (sessionUserId) {
+        try {
+          await supabaseService.deleteTopic(sessionUserId, topicId);
+          const cloudSubjects = await supabaseService.fetchSubjects(sessionUserId);
+          setAuthUserId(sessionUserId);
+          setSyncError(null);
+          setSubjectsState(cloudSubjects);
+          return;
+        } catch (err) {
+          const message = err instanceof Error ? err.message : "Failed to delete topic in Supabase.";
+          console.error("[FocusFlow] Topic delete failed:", err);
+          setSyncError(message);
+          throw err instanceof Error ? err : new Error(message);
+        }
+      }
+
+      const isGuestMode = !profile.email || profile.email === "guest@focusflow.app";
+      if (!isSupabaseConfigured || isGuestMode) {
+        const subject = subjects.find((item) => item.id === subjectId);
+
+        if (!subject) {
+          throw new Error("Subject not found.");
+        }
+
+        const nextUnits = subject.syllabusUnits.map((entry) =>
+          entry.id === unitId
+            ? { ...entry, topics: entry.topics.filter((topic) => topic.id !== topicId) }
+            : entry,
+        );
+        const nextSubjects = localDataSource.updateSubject(subjectId, { syllabusUnits: nextUnits });
+        setSubjectsState(nextSubjects);
+        setSyncError(null);
+        return;
+      }
+
+      const authError = new Error("User not signed in.");
+      console.error("[FocusFlow] Topic delete blocked: no Supabase session found.");
+      setSyncError(authError.message);
+      throw authError;
+    },
+    [getSessionUserId, profile.email, subjects],
+  );
+
+  const addGoal = useCallback(
+    async (goal: StudyGoal) => {
+      const sessionUserId = await getSessionUserId();
+
+      if (sessionUserId) {
+        try {
+          const createdGoal = await supabaseService.createGoal(sessionUserId, goal);
+          setAuthUserId(sessionUserId);
+          setSyncError(null);
+          setGoalsState((prev) => [...prev.filter((item) => item.id !== createdGoal.id), createdGoal]);
+          return createdGoal;
+        } catch (err) {
+          const message = err instanceof Error ? err.message : "Failed to create goal in Supabase.";
+          console.error("[FocusFlow] Goal create failed:", err);
+          setSyncError(message);
+          throw err instanceof Error ? err : new Error(message);
+        }
+      }
+
+      const isGuestMode = !profile.email || profile.email === "guest@focusflow.app";
+      if (!isSupabaseConfigured || isGuestMode) {
+        const nextGoals = [...goals, goal];
+        setGoalsState(nextGoals);
+        setSyncError(null);
+        localDataSource.saveGoals(nextGoals);
+        return goal;
+      }
+
+      const authError = new Error("User not signed in.");
+      console.error("[FocusFlow] Goal create blocked: no Supabase session found.");
+      setSyncError(authError.message);
+      throw authError;
+    },
+    [getSessionUserId, goals, profile.email],
+  );
+
+  const updateGoal = useCallback(
+    async (goalId: string, patch: Partial<StudyGoal>) => {
+      const sessionUserId = await getSessionUserId();
+
+      if (sessionUserId) {
+        try {
+          const updatedGoal = await supabaseService.updateGoal(sessionUserId, goalId, patch);
+          setAuthUserId(sessionUserId);
+          setSyncError(null);
+          setGoalsState((prev) =>
+            prev.map((goal) => (goal.id === goalId ? updatedGoal : goal)),
+          );
+          return updatedGoal;
+        } catch (err) {
+          const message = err instanceof Error ? err.message : "Failed to update goal in Supabase.";
+          console.error("[FocusFlow] Goal update failed:", err);
+          setSyncError(message);
+          throw err instanceof Error ? err : new Error(message);
+        }
+      }
+
+      const isGuestMode = !profile.email || profile.email === "guest@focusflow.app";
+      if (!isSupabaseConfigured || isGuestMode) {
+        const nextGoals = goals.map((goal) =>
+          goal.id === goalId ? { ...goal, ...patch } : goal,
+        );
+        const updatedGoal = nextGoals.find((goal) => goal.id === goalId);
+
+        if (!updatedGoal) {
+          throw new Error("Goal not found.");
+        }
+
+        setGoalsState(nextGoals);
+        setSyncError(null);
+        localDataSource.saveGoals(nextGoals);
+        return updatedGoal;
+      }
+
+      const authError = new Error("User not signed in.");
+      console.error("[FocusFlow] Goal update blocked: no Supabase session found.");
+      setSyncError(authError.message);
+      throw authError;
+    },
+    [getSessionUserId, goals, profile.email],
+  );
+
+  const deleteGoal = useCallback(
+    async (goalId: string) => {
+      const sessionUserId = await getSessionUserId();
+
+      if (sessionUserId) {
+        try {
+          await supabaseService.deleteGoal(sessionUserId, goalId);
+          setAuthUserId(sessionUserId);
+          setSyncError(null);
+          setGoalsState((prev) => prev.filter((goal) => goal.id !== goalId));
+          return;
+        } catch (err) {
+          const message = err instanceof Error ? err.message : "Failed to delete goal in Supabase.";
+          console.error("[FocusFlow] Goal delete failed:", err);
+          setSyncError(message);
+          throw err instanceof Error ? err : new Error(message);
+        }
+      }
+
+      const isGuestMode = !profile.email || profile.email === "guest@focusflow.app";
+      if (!isSupabaseConfigured || isGuestMode) {
+        const nextGoals = goals.filter((goal) => goal.id !== goalId);
+        setGoalsState(nextGoals);
+        setSyncError(null);
+        localDataSource.saveGoals(nextGoals);
+        return;
+      }
+
+      const authError = new Error("User not signed in.");
+      console.error("[FocusFlow] Goal delete blocked: no Supabase session found.");
+      setSyncError(authError.message);
+      throw authError;
+    },
+    [getSessionUserId, goals, profile.email],
   );
 
   const saveReviewedSyllabus = useCallback(
@@ -535,44 +1284,117 @@ export const FocusFlowDataProvider = ({ children }: PropsWithChildren) => {
   );
 
   const setSubjects = useCallback(
-    (nextSubjects: Subject[]) => {
-      setSubjectsState(nextSubjects);
-      if (authUserId) {
-        syncToCloud(async (userId) => {
+    async (nextSubjects: Subject[]) => {
+      const sessionUserId = await getSessionUserId();
+
+      if (sessionUserId) {
+        try {
           for (const subject of nextSubjects) {
-            await supabaseService.updateSubject(userId, subject.id, subject);
-            await supabaseService.saveSubjectSyllabus(userId, subject);
+            await supabaseService.updateSubject(sessionUserId, subject.id, subject);
           }
-        });
-      } else {
-        localDataSource.saveSubjects(nextSubjects);
+
+          const cloudSubjects = await supabaseService.fetchSubjects(sessionUserId);
+          setAuthUserId(sessionUserId);
+          setSyncError(null);
+          setSubjectsState(cloudSubjects);
+          return cloudSubjects;
+        } catch (err) {
+          const message =
+            err instanceof Error ? err.message : "Failed to save subjects in Supabase.";
+          console.error("[FocusFlow] Subjects bulk save failed:", err);
+          setSyncError(message);
+          throw err instanceof Error ? err : new Error(message);
+        }
       }
+
+      const isGuestMode = !profile.email || profile.email === "guest@focusflow.app";
+      if (!isSupabaseConfigured || isGuestMode) {
+        localDataSource.saveSubjects(nextSubjects);
+        setSubjectsState(nextSubjects);
+        setSyncError(null);
+        return nextSubjects;
+      }
+
+      const authError = new Error("User not signed in.");
+      console.error("[FocusFlow] Subjects bulk save blocked: no Supabase session found.");
+      setSyncError(authError.message);
+      throw authError;
     },
-    [authUserId, syncToCloud],
+    [getSessionUserId, profile.email],
   );
 
   const setProfile = useCallback(
-    (nextProfile: UserProfile) => {
-      setProfileState(nextProfile);
-      if (authUserId) {
-        syncToCloud((userId) => supabaseService.upsertProfile(userId, nextProfile));
-      } else {
-        localDataSource.saveProfile(nextProfile);
+    async (nextProfile: UserProfile) => {
+      const sessionUserId = await getSessionUserId();
+
+      if (sessionUserId) {
+        try {
+          const savedProfile = await supabaseService.upsertProfile(sessionUserId, {
+            ...nextProfile,
+            id: sessionUserId,
+            isAuthenticated: true,
+          });
+          setAuthUserId(sessionUserId);
+          setProfileState(savedProfile);
+          setSyncError(null);
+          return savedProfile;
+        } catch (err) {
+          const message = err instanceof Error ? err.message : "Failed to save profile in Supabase.";
+          console.error("[FocusFlow] Profile save failed:", err);
+          setSyncError(message);
+          throw err instanceof Error ? err : new Error(message);
+        }
       }
+
+      const isGuestMode = !nextProfile.email || nextProfile.email === "guest@focusflow.app";
+      if (!isSupabaseConfigured || isGuestMode) {
+        setProfileState(nextProfile);
+        setSyncError(null);
+        localDataSource.saveProfile(nextProfile);
+        return nextProfile;
+      }
+
+      const authError = new Error("User not signed in.");
+      console.error("[FocusFlow] Profile save blocked: no Supabase session found.");
+      setSyncError(authError.message);
+      throw authError;
     },
-    [authUserId, syncToCloud],
+    [getSessionUserId],
   );
 
   const setGoals = useCallback(
-    (nextGoals: StudyGoal[]) => {
-      setGoalsState(nextGoals);
-      if (authUserId) {
-        syncToCloud((userId) => supabaseService.saveAllGoals(userId, nextGoals));
-      } else {
-        localDataSource.saveGoals(nextGoals);
+    async (nextGoals: StudyGoal[]) => {
+      const sessionUserId = await getSessionUserId();
+
+      if (sessionUserId) {
+        try {
+          const savedGoals = await supabaseService.saveAllGoals(sessionUserId, nextGoals);
+          setAuthUserId(sessionUserId);
+          setGoalsState(savedGoals);
+          setSyncError(null);
+          return savedGoals;
+        } catch (err) {
+          const message = err instanceof Error ? err.message : "Failed to save goals in Supabase.";
+          console.error("[FocusFlow] Goals bulk save failed:", err);
+          setSyncError(message);
+          throw err instanceof Error ? err : new Error(message);
+        }
       }
+
+      const isGuestMode = !profile.email || profile.email === "guest@focusflow.app";
+      if (!isSupabaseConfigured || isGuestMode) {
+        localDataSource.saveGoals(nextGoals);
+        setGoalsState(nextGoals);
+        setSyncError(null);
+        return nextGoals;
+      }
+
+      const authError = new Error("User not signed in.");
+      console.error("[FocusFlow] Goals bulk save blocked: no Supabase session found.");
+      setSyncError(authError.message);
+      throw authError;
     },
-    [authUserId, syncToCloud],
+    [getSessionUserId, profile.email],
   );
 
   // -------------------------------------------------------------------------
@@ -633,15 +1455,24 @@ export const FocusFlowDataProvider = ({ children }: PropsWithChildren) => {
     profile,
     goals,
     isLoading,
+    isAuthReady,
     syncError,
     authUserId,
     addSession,
     updateSession,
+    deleteSession,
     addSubject,
     addUnitToSubject,
     addTopicToUnit,
     updateSubject,
     deleteSubject,
+    updateUnitInSubject,
+    deleteUnitFromSubject,
+    updateTopicInUnit,
+    deleteTopicFromUnit,
+    addGoal,
+    updateGoal,
+    deleteGoal,
     saveReviewedSyllabus,
     getSubjectSyllabus,
     setSubjects,

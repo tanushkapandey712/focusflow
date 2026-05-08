@@ -9,7 +9,7 @@ import { getResolvedSubject } from "../utils/subjects";
 import { Clock, CheckCircle2, AlertTriangle, TrendingUp } from "lucide-react";
 
 export const SessionHistoryPage = () => {
-  const { sessions, subjects, updateSession, setSubjects } = useFocusFlowData();
+  const { sessions, subjects, updateSession, updateTopicInUnit } = useFocusFlowData();
   const [subjectFilter, setSubjectFilter] = useState("all");
   const [durationFilter, setDurationFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -72,12 +72,30 @@ export const SessionHistoryPage = () => {
       syllabusTopic,
     };
 
-    updateSession(sessionId, patch);
+    void updateSession(sessionId, patch).catch((err) => {
+      console.error("[FocusFlow] Session topic link update failed:", err);
+    });
 
     const nextSessions = sessions.map((session) =>
       session.id === sessionId ? { ...session, ...patch } : session,
     );
-    setSubjects(rebuildSubjectsWithSessionProgress(subjects, nextSessions));
+    const updatedSubject = rebuildSubjectsWithSessionProgress(subjects, nextSessions).find(
+      (subject) => subject.id === params.subjectId,
+    );
+    const updatedTopic = updatedSubject?.syllabusUnits
+      .find((unit) => unit.id === params.unitId)
+      ?.topics.find((topic) => topic.id === params.topicId);
+
+    if (updatedTopic) {
+      void updateTopicInUnit(params.subjectId, params.unitId, params.topicId, {
+        status: updatedTopic.status,
+        studiedMinutes: updatedTopic.studiedMinutes,
+        studySessionsCount: updatedTopic.studySessionsCount,
+        lastStudiedAt: updatedTopic.lastStudiedAt,
+      }).catch((err) => {
+        console.error("[FocusFlow] Session progress rebuild failed:", err);
+      });
+    }
   };
 
   // Compact statistics summary

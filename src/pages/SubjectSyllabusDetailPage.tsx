@@ -82,7 +82,14 @@ const sortTopics = (topics: SyllabusTopic[], sortOption: TopicSortOption) => {
 export const SubjectSyllabusDetailPage = () => {
   const navigate = useNavigate();
   const { subjectId } = useParams();
-  const { subjects, getSubjectSyllabus, addTopicToUnit, updateSubject } = useFocusFlowData();
+  const {
+    subjects,
+    getSubjectSyllabus,
+    addTopicToUnit,
+    updateSubject,
+    updateTopicInUnit,
+    deleteTopicFromUnit,
+  } = useFocusFlowData();
   const [examDate, setExamDate] = useState("");
   const [expandedUnitId, setExpandedUnitId] = useState<string | null>(null);
   const [showAllTopics, setShowAllTopics] = useState<Record<string, boolean>>({});
@@ -170,48 +177,26 @@ export const SubjectSyllabusDetailPage = () => {
     0,
   );
 
-  const updateSyllabusUnits = (nextUnits: typeof subject.syllabusUnits) =>
-    updateSubject(subject.id, { syllabusUnits: nextUnits });
-
-  const handleRenameTopic = (unitId: string, topicId: string, title: string) => {
-    const nextUnits = subject.syllabusUnits.map((unit) =>
-      unit.id === unitId
-        ? {
-            ...unit,
-            topics: unit.topics.map((topic) => (topic.id === topicId ? { ...topic, title } : topic)),
-          }
-        : unit,
-    );
-
-    updateSyllabusUnits(nextUnits);
+  const handleRenameTopic = async (unitId: string, topicId: string, title: string) => {
+    await updateTopicInUnit(subject.id, unitId, topicId, { title });
   };
 
-  const handleDeleteTopic = (unitId: string, topicId: string) => {
-    const nextUnits = subject.syllabusUnits.map((unit) =>
-      unit.id === unitId
-        ? {
-            ...unit,
-            topics: unit.topics.filter((topic) => topic.id !== topicId),
-          }
-        : unit,
-    );
-
-    updateSyllabusUnits(nextUnits);
+  const handleDeleteTopic = async (unitId: string, topicId: string) => {
+    await deleteTopicFromUnit(subject.id, unitId, topicId);
   };
 
-  const handleToggleTopic = (unitId: string, topicId: string) => {
-    const nextUnits = subject.syllabusUnits.map((unit) =>
-      unit.id === unitId
-        ? {
-            ...unit,
-            topics: unit.topics.map((topic) =>
-              topic.id === topicId ? toggleTopicCompletionStatus(topic) : topic,
-            ),
-          }
-        : unit,
-    );
+  const handleToggleTopic = async (unitId: string, topicId: string) => {
+    const topic = subject.syllabusUnits
+      .find((unit) => unit.id === unitId)
+      ?.topics.find((candidate) => candidate.id === topicId);
 
-    updateSyllabusUnits(nextUnits);
+    if (!topic) {
+      return;
+    }
+
+    await updateTopicInUnit(subject.id, unitId, topicId, {
+      status: toggleTopicCompletionStatus(topic).status,
+    });
   };
 
   const handleAddTopic = async (unitId: string, title: string) => {
@@ -291,7 +276,11 @@ export const SubjectSyllabusDetailPage = () => {
                 </label>
                 <Button
                   variant="secondary"
-                  onClick={() => updateSubject(subject.id, { examDate: examDate || undefined })}
+                  onClick={() => {
+                    void updateSubject(subject.id, { examDate: examDate || undefined }).catch((err) => {
+                      console.error("[FocusFlow] Exam date update failed:", err);
+                    });
+                  }}
                 >
                   Save Exam Date
                 </Button>
@@ -418,10 +407,22 @@ export const SubjectSyllabusDetailPage = () => {
                         [unit.id]: !current[unit.id],
                       }))
                     }
-                    onToggleTopic={(topicId) => handleToggleTopic(unit.id, topicId)}
+                    onToggleTopic={(topicId) => {
+                      void handleToggleTopic(unit.id, topicId).catch((err) => {
+                        console.error("[FocusFlow] Topic status update failed:", err);
+                      });
+                    }}
                     onAddTopic={(title) => handleAddTopic(unit.id, title)}
-                    onRenameTopic={(topicId, title) => handleRenameTopic(unit.id, topicId, title)}
-                    onDeleteTopic={(topicId) => handleDeleteTopic(unit.id, topicId)}
+                    onRenameTopic={(topicId, title) => {
+                      void handleRenameTopic(unit.id, topicId, title).catch((err) => {
+                        console.error("[FocusFlow] Topic rename failed:", err);
+                      });
+                    }}
+                    onDeleteTopic={(topicId) => {
+                      void handleDeleteTopic(unit.id, topicId).catch((err) => {
+                        console.error("[FocusFlow] Topic delete failed:", err);
+                      });
+                    }}
                     progressFillStyle={visuals.fillStyle}
                     matchSummary={matchSummary}
                   />

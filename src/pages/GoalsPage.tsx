@@ -1,5 +1,16 @@
 import { useState } from "react";
-import { Plus, CheckCircle2, Circle, Trophy, BookOpen, Clock, Trash2, Edit2, Check } from "lucide-react";
+import {
+  Plus,
+  CheckCircle2,
+  Circle,
+  Trophy,
+  BookOpen,
+  Clock,
+  Trash2,
+  Edit2,
+  Check,
+  type LucideIcon,
+} from "lucide-react";
 import { DashboardContainer } from "../components/dashboard/DashboardContainer";
 import { StreakCard } from "../components/goals/StreakCard";
 import { SectionContainer, Button } from "../components/ui";
@@ -21,13 +32,13 @@ const GoalSection = ({
   onToggleGoal
 }: { 
   title: string; 
-  icon: any; 
+  icon: LucideIcon; 
   goals: StudyGoal[];
   type: "academic" | "habit" | "milestone";
-  onAddGoal: (title: string, targetMinutes: number, type: "academic" | "habit" | "milestone") => void;
-  onUpdateGoal: (id: string, title: string) => void;
-  onDeleteGoal: (id: string) => void;
-  onToggleGoal: (id: string, isCompleted: boolean) => void;
+  onAddGoal: (title: string, targetMinutes: number, type: "academic" | "habit" | "milestone") => Promise<void>;
+  onUpdateGoal: (id: string, title: string) => Promise<void>;
+  onDeleteGoal: (id: string) => Promise<void>;
+  onToggleGoal: (id: string, isCompleted: boolean) => Promise<void>;
 }) => {
   const [isAdding, setIsAdding] = useState(false);
   const [newTitle, setNewTitle] = useState("");
@@ -35,20 +46,32 @@ const GoalSection = ({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     if (!newTitle.trim()) {
       setAddError("Goal title is required.");
       return;
     }
-    onAddGoal(newTitle.trim(), 120, type); // Default to 120 min or arbitrary target
-    setNewTitle("");
-    setAddError("");
-    setIsAdding(false);
+
+    try {
+      await onAddGoal(newTitle.trim(), 120, type); // Default to 120 min or arbitrary target
+      setNewTitle("");
+      setAddError("");
+      setIsAdding(false);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to save goal.";
+      console.error("[FocusFlow] Goal create failed:", err);
+      setAddError(message);
+    }
   };
 
-  const handleSaveEdit = (id: string) => {
+  const handleSaveEdit = async (id: string) => {
     if (editTitle.trim()) {
-      onUpdateGoal(id, editTitle.trim());
+      try {
+        await onUpdateGoal(id, editTitle.trim());
+      } catch (err) {
+        console.error("[FocusFlow] Goal update failed:", err);
+        return;
+      }
     }
     setEditingId(null);
   };
@@ -97,7 +120,11 @@ const GoalSection = ({
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex items-center gap-3 flex-1">
                     <button 
-                      onClick={() => onToggleGoal(goal.id, !isCompleted)}
+                      onClick={() => {
+                        void onToggleGoal(goal.id, !isCompleted).catch((err) => {
+                          console.error("[FocusFlow] Goal toggle failed:", err);
+                        });
+                      }}
                       className={cn("transition-colors", isCompleted ? "text-emerald-500" : "text-slate-300 hover:text-brand-500")}
                     >
                       {isCompleted ? <CheckCircle2 size={24} /> : <Circle size={24} />}
@@ -129,7 +156,11 @@ const GoalSection = ({
                       <Edit2 size={14} />
                     </button>
                     <button 
-                      onClick={() => onDeleteGoal(goal.id)}
+                      onClick={() => {
+                        void onDeleteGoal(goal.id).catch((err) => {
+                          console.error("[FocusFlow] Goal delete failed:", err);
+                        });
+                      }}
                       className="p-2 text-rose-400 hover:text-rose-600 transition-colors rounded-lg hover:bg-rose-50 dark:hover:bg-rose-900/20"
                     >
                       <Trash2 size={14} />
@@ -179,9 +210,9 @@ const GoalSection = ({
 };
 
 export const GoalsPage = () => {
-  const { goals, setGoals, sessions } = useFocusFlowData();
+  const { goals, addGoal, updateGoal, deleteGoal, sessions } = useFocusFlowData();
 
-  const handleAddGoal = (title: string, targetMinutes: number, type: "academic" | "habit" | "milestone") => {
+  const handleAddGoal = async (title: string, targetMinutes: number, type: "academic" | "habit" | "milestone") => {
     const newGoal: StudyGoal = {
       id: crypto.randomUUID(),
       title,
@@ -189,27 +220,27 @@ export const GoalsPage = () => {
       targetMinutes,
       completedMinutes: 0,
     };
-    setGoals([...goals, newGoal]);
+    await addGoal(newGoal);
   };
 
-  const handleUpdateGoal = (id: string, title: string) => {
-    setGoals(goals.map(g => g.id === id ? { ...g, title } : g));
+  const handleUpdateGoal = async (id: string, title: string) => {
+    await updateGoal(id, { title });
   };
 
-  const handleDeleteGoal = (id: string) => {
-    setGoals(goals.filter(g => g.id !== id));
+  const handleDeleteGoal = async (id: string) => {
+    await deleteGoal(id);
   };
 
-  const handleToggleGoal = (id: string, isCompleted: boolean) => {
-    setGoals(goals.map(g => {
-      if (g.id === id) {
-        return {
-          ...g,
-          completedMinutes: isCompleted ? Math.max(g.targetMinutes, 1) : 0
-        };
-      }
-      return g;
-    }));
+  const handleToggleGoal = async (id: string, isCompleted: boolean) => {
+    const goal = goals.find((item) => item.id === id);
+
+    if (!goal) {
+      throw new Error("Goal not found.");
+    }
+
+    await updateGoal(id, {
+      completedMinutes: isCompleted ? Math.max(goal.targetMinutes, 1) : 0,
+    });
   };
 
   // Group goals by type

@@ -137,7 +137,7 @@ export const useTabDistraction = (isActive: boolean) => {
 
   /** Finalize and return the current distraction summary, then reset */
   const finalize = useCallback(() => {
-    let finalState = { ...state };
+    const finalState = { ...state };
 
     // Flush any ongoing tab-away duration
     if (tabAwayStartRef.current !== null) {

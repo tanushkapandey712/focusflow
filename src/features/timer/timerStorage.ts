@@ -10,6 +10,7 @@ export interface PersistedStudyTimerState {
   customMinutes: number;
   plannedSec: number;
   sessionStartedAtMs: number | null;
+  sessionEndedAtMs: number | null;
   activeSegmentStartedAtMs: number | null;
   isPaused: boolean;
   accumulatedElapsedSec: number;
@@ -78,6 +79,7 @@ export const readPersistedStudyTimerState = (): PersistedStudyTimerState | null 
     customMinutes: normalizeWholeSeconds(candidate.customMinutes, 30),
     plannedSec,
     sessionStartedAtMs: normalizeTimestamp(candidate.sessionStartedAtMs),
+    sessionEndedAtMs: normalizeTimestamp(candidate.sessionEndedAtMs),
     activeSegmentStartedAtMs: normalizeTimestamp(candidate.activeSegmentStartedAtMs),
     isPaused: candidate.isPaused === true,
     accumulatedElapsedSec: normalizeWholeSeconds(candidate.accumulatedElapsedSec),

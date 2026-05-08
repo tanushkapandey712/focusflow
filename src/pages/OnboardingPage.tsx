@@ -5,6 +5,7 @@ import { useFocusFlowData } from "../hooks/useFocusFlowData";
 import { Button, Card } from "../components/ui";
 import { RequiredMark } from "../components/ui/RequiredMark";
 import { buildSubjectsFromNames } from "../utils/subjects";
+import type { RoutinePreferences } from "../types/models";
 
 const TOTAL_STEPS = 6;
 
@@ -98,13 +99,27 @@ export const OnboardingPage = () => {
     setIsCompleting(true);
 
     try {
-      setProfile({
+      const preferredStudyTime: RoutinePreferences["preferredStudyTime"] =
+        preferredStudyHours === "morning"
+          ? "morning"
+          : preferredStudyHours === "evening"
+            ? "night"
+            : "flexible";
+
+      await setProfile({
         ...profile,
         name: name.trim() || "Student",
         institutionType,
-        institutionName,
-        classOrCourse,
-        fieldOfStudy,
+        institutionName: institutionName.trim() || undefined,
+        classOrCourse: classOrCourse.trim(),
+        fieldOfStudy: fieldOfStudy.trim() || undefined,
+        preferredStudyHours,
+        routine: {
+          wakeUpTime: wakeTime,
+          sleepTime,
+          commuteDurationMinutes: profile.routine?.commuteDurationMinutes ?? 30,
+          preferredStudyTime,
+        },
         hasCompletedProfileSetup: true,
         hasCompletedSyllabusSetup: true,
         hasCompletedScheduleSetup: true,
@@ -374,7 +389,7 @@ export const OnboardingPage = () => {
             </Button>
           </div>
         );
-      case 6:
+      case 6: {
         const recommendedSubject = localSubjects.length > 0 ? localSubjects[0] : "Productivity 101";
         return (
           <div className="space-y-8 animate-fade-in text-center flex flex-col items-center">
@@ -419,6 +434,7 @@ export const OnboardingPage = () => {
             {stepError ? <p className="text-sm text-rose-500">{stepError}</p> : null}
           </div>
         );
+      }
       default:
         return null;
     }

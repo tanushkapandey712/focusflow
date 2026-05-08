@@ -179,6 +179,7 @@ const normalizeSubject = (value: unknown): Subject | null => {
 
 export interface FocusFlowStorageAPI {
   getSessions: () => StudySession[];
+  saveSessions: (sessions: StudySession[]) => StudySession[];
   saveSession: (session: StudySession) => StudySession[];
   updateSession: (sessionId: string, patch: Partial<StudySession>) => StudySession[];
   getSubjects: () => Subject[];
@@ -195,6 +196,11 @@ export interface FocusFlowStorageAPI {
 
 export const focusFlowStorage: FocusFlowStorageAPI = {
   getSessions: () => readList<StudySession>(STORAGE_KEYS.sessions),
+
+  saveSessions: (sessions) => {
+    safeWrite(STORAGE_KEYS.sessions, sessions);
+    return sessions;
+  },
 
   saveSession: (session) => {
     const current = readList<StudySession>(STORAGE_KEYS.sessions);

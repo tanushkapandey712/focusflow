@@ -110,5 +110,8 @@ export const onEmailAuthStateChange = (callback: (session: Session | null) => vo
 
 export const signOut = async () => {
   if (!isSupabaseConfigured) return;
-  await getSupabaseClient().auth.signOut();
+  // Supabase Auth v2 defaults signOut() to the global scope.
+  // Use local scope so logout only clears this browser/device session.
+  const { error } = await getSupabaseClient().auth.signOut({ scope: "local" });
+  if (error) throw error;
 };

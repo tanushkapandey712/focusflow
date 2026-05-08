@@ -42,7 +42,7 @@ export const ProfileSetupPage = () => {
   const trimmedName = name.trim();
   const trimmedClassOrCourse = classOrCourse.trim();
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     if (!trimmedName) {
@@ -65,18 +65,24 @@ export const ProfileSetupPage = () => {
       return;
     }
 
-    setProfile({
-      ...profile,
-      name: trimmedName,
-      avatarUrl,
-      institutionType,
-      classOrCourse: trimmedClassOrCourse,
-      institutionStartTime: startTime,
-      institutionEndTime: endTime,
-      hasCompletedProfileSetup: true,
-    });
+    try {
+      await setProfile({
+        ...profile,
+        name: trimmedName,
+        avatarUrl,
+        institutionType,
+        classOrCourse: trimmedClassOrCourse,
+        institutionStartTime: startTime,
+        institutionEndTime: endTime,
+        hasCompletedProfileSetup: true,
+      });
 
-    navigate("/syllabus-setup");
+      navigate("/syllabus-setup");
+    } catch (saveError) {
+      const message = saveError instanceof Error ? saveError.message : "Unable to save your profile.";
+      console.error("[FocusFlow] Profile setup save failed:", saveError);
+      setError(message);
+    }
   };
 
   return (

@@ -67,7 +67,7 @@ export const ScheduleSetupPage = () => {
     setGeneratedTimetable(timetable);
   };
 
-  const handleComplete = () => {
+  const handleComplete = async () => {
     const routine: RoutinePreferences = {
       wakeUpTime,
       sleepTime,
@@ -75,11 +75,17 @@ export const ScheduleSetupPage = () => {
       preferredStudyTime,
     };
 
-    setProfile({
-      ...profile,
-      routine,
-      hasCompletedScheduleSetup: true,
-    });
+    try {
+      await setProfile({
+        ...profile,
+        routine,
+        preferredStudyHours: preferredStudyTime,
+        hasCompletedScheduleSetup: true,
+      });
+    } catch (saveError) {
+      console.error("[FocusFlow] Schedule setup save failed:", saveError);
+      return;
+    }
 
     // Store the timetable in localStorage
     try {
@@ -94,11 +100,17 @@ export const ScheduleSetupPage = () => {
     navigate("/dashboard");
   };
 
-  const handleSkip = () => {
-    setProfile({
-      ...profile,
-      hasCompletedScheduleSetup: true,
-    });
+  const handleSkip = async () => {
+    try {
+      await setProfile({
+        ...profile,
+        hasCompletedScheduleSetup: true,
+      });
+    } catch (saveError) {
+      console.error("[FocusFlow] Schedule setup skip save failed:", saveError);
+      return;
+    }
+
     navigate("/dashboard");
   };
 

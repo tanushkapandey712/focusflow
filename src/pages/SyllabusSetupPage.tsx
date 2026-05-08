@@ -22,12 +22,16 @@ export const SyllabusSetupPage = () => {
     return <Navigate to="/dashboard" replace />;
   }
 
-  const handleCompleteSetup = () => {
-    setProfile({
-      ...profile,
-      hasCompletedSyllabusSetup: true,
-    });
-    navigate("/schedule-setup");
+  const handleCompleteSetup = async () => {
+    try {
+      await setProfile({
+        ...profile,
+        hasCompletedSyllabusSetup: true,
+      });
+      navigate("/schedule-setup");
+    } catch (saveError) {
+      console.error("[FocusFlow] Syllabus setup completion save failed:", saveError);
+    }
   };
 
   const handleSaveImport = async (params: {
@@ -58,7 +62,7 @@ export const SyllabusSetupPage = () => {
             </div>
           </Link>
           <Button
-            onClick={handleCompleteSetup}
+            onClick={() => void handleCompleteSetup()}
             disabled={subjects.length === 0}
             variant="primary"
             className="rounded-full shadow-soft"
