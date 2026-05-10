@@ -161,11 +161,3 @@ All major implementation decisions, integration testing, debugging, feature plan
 - Native mobile application
 
 ---
-
-## Local Setup
-
-Clone the repository:
-
-```bash
-git clone <your-repository-link>
-cd focusflow
