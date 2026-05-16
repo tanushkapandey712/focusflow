@@ -1,6 +1,14 @@
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, BarChart3, Brain, Clock, FolderOpen, Target, UploadCloud } from "lucide-react";
+import {
+  ArrowRight,
+  BarChart3,
+  Brain,
+  Clock,
+  FolderOpen,
+  Target,
+  UploadCloud,
+} from "lucide-react";
 import { useFocusFlowData } from "../hooks/useFocusFlowData";
 import { getNextAppRoute, isProfileSetupComplete } from "../utils/profile";
 
@@ -32,7 +40,11 @@ export const LandingPage = () => {
       <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-4 md:px-12 backdrop-blur-md bg-white/40 dark:bg-surface-900/40 border-b border-white/20 dark:border-white/5">
         <div className="flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500 to-indigo-500 shadow-soft">
-            <img src="/focusflow-icon.svg" alt="FocusFlow Logo" className="h-5 w-5 brightness-0 invert" />
+            <img
+              src="/focusflow-icon.svg"
+              alt="FocusFlow Logo"
+              className="h-5 w-5 brightness-0 invert"
+            />
           </div>
           <span className="text-xl font-bold tracking-tight">FocusFlow</span>
         </div>
@@ -59,16 +71,20 @@ export const LandingPage = () => {
           <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-slate-900 dark:text-white leading-[1.1]">
             FocusFlow
           </h1>
-          <p className="mt-6 text-xl md:text-2xl text-slate-600 dark:text-slate-300 max-w-2xl">
-            AI-powered study productivity workspace
-          </p>
+          <h2 className="mt-6 text-xl md:text-2xl font-medium text-slate-600 dark:text-slate-300 max-w-2xl">
+            The AI-powered study planner and Pomodoro focus timer for serious
+            students.
+          </h2>
           <div className="mt-10 flex flex-col sm:flex-row gap-4 items-center">
             <Link
               to={profileReady ? "/timer" : nextRoute}
               className="group flex h-14 items-center gap-2 rounded-full bg-slate-900 px-8 text-base font-semibold text-white shadow-[0_0_40px_-10px_rgba(0,0,0,0.3)] transition-all hover:scale-105 hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:shadow-[0_0_40px_-10px_rgba(255,255,255,0.3)] dark:hover:bg-slate-100"
             >
               Start Studying
-              <ArrowRight className="transition-transform group-hover:translate-x-1" size={18} />
+              <ArrowRight
+                className="transition-transform group-hover:translate-x-1"
+                size={18}
+              />
             </Link>
             <a
               href="#features"
@@ -80,7 +96,10 @@ export const LandingPage = () => {
         </section>
 
         {/* 4. Mock Preview Hero Extension */}
-        <section className="w-full max-w-6xl px-4 animate-fade-up" style={{ animationDelay: "200ms" }}>
+        <section
+          className="w-full max-w-6xl px-4 animate-fade-up"
+          style={{ animationDelay: "200ms" }}
+        >
           <div className="relative rounded-[2.5rem] border border-white/40 bg-white/40 p-3 shadow-2xl backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/40 sm:p-6">
             <div className="w-full overflow-hidden rounded-[1.5rem] sm:rounded-[2rem] border border-slate-200/50 bg-slate-50 dark:border-slate-700/50 dark:bg-slate-950 relative">
               <div className="absolute inset-0 bg-gradient-to-br from-brand-50 to-indigo-50 dark:from-surface-900 dark:to-surface-800" />
@@ -89,13 +108,28 @@ export const LandingPage = () => {
                 <div className="hidden md:block w-48 bg-white dark:bg-surface-800 border-r border-slate-100 dark:border-slate-700 p-4 space-y-6 shrink-0">
                   <div className="flex items-center gap-2 px-2">
                     <div className="flex h-6 w-6 items-center justify-center rounded bg-brand-500">
-                      <img src="/focusflow-icon.svg" alt="FocusFlow Logo" className="h-4 w-4 brightness-0 invert" />
+                      <img
+                        src="/focusflow-icon.svg"
+                        alt="FocusFlow Logo"
+                        className="h-4 w-4 brightness-0 invert"
+                      />
                     </div>
-                    <span className="font-bold text-sm dark:text-white">FocusFlow</span>
+                    <span className="font-bold text-sm dark:text-white">
+                      FocusFlow
+                    </span>
                   </div>
                   <div className="space-y-1">
-                    {["Dashboard", "Study Timer", "Syllabus Map", "Analytics", "Goals"].map((item, i) => (
-                      <div key={i} className={`px-3 py-2 rounded-xl text-xs font-semibold ${i === 0 ? "bg-brand-50 text-brand-600 dark:bg-brand-500/20 dark:text-brand-300" : "text-slate-500 dark:text-slate-400"}`}>
+                    {[
+                      "Dashboard",
+                      "Study Timer",
+                      "Syllabus Map",
+                      "Analytics",
+                      "Goals",
+                    ].map((item, i) => (
+                      <div
+                        key={i}
+                        className={`px-3 py-2 rounded-xl text-xs font-semibold ${i === 0 ? "bg-brand-50 text-brand-600 dark:bg-brand-500/20 dark:text-brand-300" : "text-slate-500 dark:text-slate-400"}`}
+                      >
                         {item}
                       </div>
                     ))}
@@ -106,46 +140,84 @@ export const LandingPage = () => {
                   {/* Mobile mini nav bar */}
                   <div className="flex md:hidden items-center gap-2 mb-2">
                     <div className="flex h-6 w-6 items-center justify-center rounded bg-brand-500">
-                      <img src="/focusflow-icon.svg" alt="FocusFlow Logo" className="h-4 w-4 brightness-0 invert" />
+                      <img
+                        src="/focusflow-icon.svg"
+                        alt="FocusFlow Logo"
+                        className="h-4 w-4 brightness-0 invert"
+                      />
                     </div>
-                    <span className="font-bold text-xs dark:text-white">FocusFlow</span>
+                    <span className="font-bold text-xs dark:text-white">
+                      FocusFlow
+                    </span>
                   </div>
                   <div className="flex justify-between items-center">
                     <div>
-                      <h3 className="text-base sm:text-xl font-bold dark:text-white">Good evening, Alex</h3>
-                      <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400">You're on a 5-day streak. Keep it up!</p>
+                      <h3 className="text-base sm:text-xl font-bold dark:text-white">
+                        Good evening, Alex
+                      </h3>
+                      <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400">
+                        You're on a 5-day streak. Keep it up!
+                      </p>
                     </div>
                     <div className="flex gap-2">
-                      <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-brand-100 flex items-center justify-center text-[10px] sm:text-xs font-bold text-brand-600">AL</div>
+                      <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-brand-100 flex items-center justify-center text-[10px] sm:text-xs font-bold text-brand-600">
+                        AL
+                      </div>
                     </div>
                   </div>
-                  
+
                   {/* Quick Stats */}
                   <div className="grid grid-cols-3 gap-2 sm:gap-4">
                     <div className="rounded-xl sm:rounded-2xl bg-white dark:bg-surface-800 p-2.5 sm:p-4 border border-slate-100 dark:border-slate-700 shadow-sm">
-                      <p className="text-[8px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-500">Today's Focus</p>
-                      <p className="text-lg sm:text-2xl font-bold text-slate-900 dark:text-white mt-0.5 sm:mt-1">145 <span className="text-[10px] sm:text-sm font-medium text-slate-400">min</span></p>
+                      <p className="text-[8px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                        Today's Focus
+                      </p>
+                      <p className="text-lg sm:text-2xl font-bold text-slate-900 dark:text-white mt-0.5 sm:mt-1">
+                        145{" "}
+                        <span className="text-[10px] sm:text-sm font-medium text-slate-400">
+                          min
+                        </span>
+                      </p>
                     </div>
                     <div className="rounded-xl sm:rounded-2xl bg-white dark:bg-surface-800 p-2.5 sm:p-4 border border-slate-100 dark:border-slate-700 shadow-sm">
-                      <p className="text-[8px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-500">Topics Done</p>
-                      <p className="text-lg sm:text-2xl font-bold text-slate-900 dark:text-white mt-0.5 sm:mt-1">4</p>
+                      <p className="text-[8px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                        Topics Done
+                      </p>
+                      <p className="text-lg sm:text-2xl font-bold text-slate-900 dark:text-white mt-0.5 sm:mt-1">
+                        4
+                      </p>
                     </div>
                     <div className="rounded-xl sm:rounded-2xl bg-white dark:bg-surface-800 p-2.5 sm:p-4 border border-slate-100 dark:border-slate-700 shadow-sm">
-                      <p className="text-[8px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-500">Streak</p>
-                      <p className="text-lg sm:text-2xl font-bold text-emerald-500 mt-0.5 sm:mt-1">5 <span className="text-[10px] sm:text-sm font-medium text-emerald-400">days</span></p>
+                      <p className="text-[8px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                        Streak
+                      </p>
+                      <p className="text-lg sm:text-2xl font-bold text-emerald-500 mt-0.5 sm:mt-1">
+                        5{" "}
+                        <span className="text-[10px] sm:text-sm font-medium text-emerald-400">
+                          days
+                        </span>
+                      </p>
                     </div>
                   </div>
 
                   {/* Active Syllabus */}
                   <div className="rounded-xl sm:rounded-2xl bg-white dark:bg-surface-800 p-3 sm:p-5 border border-slate-100 dark:border-slate-700 shadow-sm flex flex-col gap-3 sm:gap-4">
                     <div className="flex justify-between items-center">
-                      <p className="text-xs sm:text-sm font-bold dark:text-white">Up Next: Mathematics-II</p>
-                      <span className="text-[10px] sm:text-xs font-semibold text-brand-500 bg-brand-50 dark:bg-brand-500/10 px-2 py-0.5 sm:py-1 rounded">Unit 2</span>
+                      <p className="text-xs sm:text-sm font-bold dark:text-white">
+                        Up Next: Mathematics-II
+                      </p>
+                      <span className="text-[10px] sm:text-xs font-semibold text-brand-500 bg-brand-50 dark:bg-brand-500/10 px-2 py-0.5 sm:py-1 rounded">
+                        Unit 2
+                      </span>
                     </div>
                     <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-900/50 p-2.5 sm:p-3 rounded-lg sm:rounded-xl border border-slate-100 dark:border-slate-800">
                       <div>
-                        <p className="text-xs sm:text-sm font-semibold dark:text-slate-200">Laplace Transforms</p>
-                        <p className="text-[10px] sm:text-xs text-slate-500">Recommended: 45m</p>
+                        <p className="text-xs sm:text-sm font-semibold dark:text-slate-200">
+                          Laplace Transforms
+                        </p>
+                        <p className="text-[10px] sm:text-xs text-slate-500">
+                          Recommended: 45m
+                        </p>
                       </div>
                       <div className="h-7 sm:h-8 px-3 sm:px-4 rounded-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center text-[10px] sm:text-xs font-bold">
                         Start
@@ -161,18 +233,45 @@ export const LandingPage = () => {
         {/* 2. Features Section */}
         <section id="features" className="w-full max-w-6xl px-4 space-y-12">
           <div className="text-center space-y-4">
-            <h2 className="text-3xl md:text-4xl font-bold tracking-tight">Premium Study Tools</h2>
-            <p className="text-slate-600 dark:text-slate-400 text-lg">Everything you need to focus, analyze, and succeed.</p>
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
+              Premium Study Tools
+            </h2>
+            <p className="text-slate-600 dark:text-slate-400 text-lg">
+              Everything you need to focus, analyze, and succeed.
+            </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
-              { title: "Smart Study Timer", desc: "Adaptive intervals, custom deep work blocks, and strict distraction tracking.", icon: Clock },
-              { title: "Syllabus Tracking", desc: "Map out subjects, units, and topics to visualize exactly what's left to learn.", icon: FolderOpen },
-              { title: "AI Study Suggestions", desc: "Intelligent nudges based on your performance, weak areas, and fatigue levels.", icon: Brain },
-              { title: "Focus Analytics", desc: "Heatmaps, weekly trends, and subject distributions in beautiful charts.", icon: BarChart3 },
-              { title: "Deep Work Sessions", desc: "Enter a pristine, distraction-free interface designed solely for concentration.", icon: Target },
+              {
+                title: "Smart Pomodoro Timer",
+                desc: "Adaptive intervals, custom deep work blocks, and strict AI distraction tracking.",
+                icon: Clock,
+              },
+              {
+                title: "Syllabus Tracker",
+                desc: "Map out subjects, units, and topics to visualize exactly what's left to learn.",
+                icon: FolderOpen,
+              },
+              {
+                title: "AI Study Suggestions",
+                desc: "Intelligent nudges based on your performance, weak areas, and fatigue levels.",
+                icon: Brain,
+              },
+              {
+                title: "Distraction Analytics",
+                desc: "Heatmaps, weekly trends, and detailed insights into your study habits.",
+                icon: BarChart3,
+              },
+              {
+                title: "Ambient Focus Music",
+                desc: "Enter a pristine, distraction-free interface with procedurally generated focus sounds.",
+                icon: Target,
+              },
             ].map((feature, i) => (
-              <div key={i} className="group rounded-[2rem] border border-white/60 bg-white/60 p-8 shadow-soft backdrop-blur-md transition-all hover:-translate-y-1 hover:shadow-xl dark:border-white/10 dark:bg-surface-800/60">
+              <div
+                key={i}
+                className="group rounded-[2rem] border border-white/60 bg-white/60 p-8 shadow-soft backdrop-blur-md transition-all hover:-translate-y-1 hover:shadow-xl dark:border-white/10 dark:bg-surface-800/60"
+              >
                 <div className="mb-6 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-100 text-brand-600 dark:bg-brand-900/30 dark:text-brand-300">
                   <feature.icon size={24} />
                 </div>
@@ -188,25 +287,51 @@ export const LandingPage = () => {
         {/* 3. How It Works */}
         <section className="w-full max-w-5xl px-4 space-y-16">
           <div className="text-center space-y-4">
-            <h2 className="text-3xl md:text-4xl font-bold tracking-tight">How It Works</h2>
-            <p className="text-slate-600 dark:text-slate-400 text-lg">A simple workflow designed for consistency.</p>
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
+              How It Works
+            </h2>
+            <p className="text-slate-600 dark:text-slate-400 text-lg">
+              A simple workflow designed for consistency.
+            </p>
           </div>
           <div className="relative grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="hidden md:block absolute top-1/2 left-[15%] right-[15%] h-0.5 bg-gradient-to-r from-brand-200 via-indigo-200 to-sky-200 dark:from-brand-800 dark:via-indigo-800 dark:to-sky-800 -translate-y-1/2 z-0" />
-            
+
             {[
-              { step: "01", title: "Upload Syllabus", desc: "Import or manually add your subjects and topics to create a structured map.", icon: UploadCloud },
-              { step: "02", title: "Start Sessions", desc: "Launch a focused timer session tailored to the specific topic you need to cover.", icon: Target },
-              { step: "03", title: "Track Progress", desc: "Review your consistency, analyze weak points, and watch your completion grow.", icon: BarChart3 },
+              {
+                step: "01",
+                title: "Upload Syllabus",
+                desc: "Import or manually add your subjects and topics to create a structured map.",
+                icon: UploadCloud,
+              },
+              {
+                step: "02",
+                title: "Start Sessions",
+                desc: "Launch a focused timer session tailored to the specific topic you need to cover.",
+                icon: Target,
+              },
+              {
+                step: "03",
+                title: "Track Progress",
+                desc: "Review your consistency, analyze weak points, and watch your completion grow.",
+                icon: BarChart3,
+              },
             ].map((item, i) => (
-              <div key={i} className="relative z-10 flex flex-col items-center text-center space-y-6">
+              <div
+                key={i}
+                className="relative z-10 flex flex-col items-center text-center space-y-6"
+              >
                 <div className="flex h-20 w-20 items-center justify-center rounded-full border-4 border-[#f8f9fc] bg-white shadow-xl dark:border-surface-900 dark:bg-surface-800">
                   <item.icon size={32} className="text-brand-500" />
                 </div>
                 <div>
-                  <div className="text-sm font-bold text-brand-500 mb-2">STEP {item.step}</div>
+                  <div className="text-sm font-bold text-brand-500 mb-2">
+                    STEP {item.step}
+                  </div>
                   <h3 className="text-xl font-bold mb-2">{item.title}</h3>
-                  <p className="text-slate-600 dark:text-slate-400 leading-relaxed max-w-xs">{item.desc}</p>
+                  <p className="text-slate-600 dark:text-slate-400 leading-relaxed max-w-xs">
+                    {item.desc}
+                  </p>
                 </div>
               </div>
             ))}
@@ -223,7 +348,8 @@ export const LandingPage = () => {
                 Build consistency, not burnout.
               </h2>
               <p className="text-lg text-slate-300 max-w-2xl mx-auto">
-                Join students who have replaced chaotic study sessions with a calm, organized, and effective workflow.
+                Join students who have replaced chaotic study sessions with a
+                calm, organized, and effective workflow.
               </p>
               <Link
                 to={nextRoute}
@@ -241,14 +367,33 @@ export const LandingPage = () => {
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-6 md:flex-row">
           <div className="flex items-center gap-2">
             <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-gradient-to-br from-brand-500 to-indigo-500">
-              <img src="/focusflow-icon.svg" alt="FocusFlow Logo" className="h-4 w-4 brightness-0 invert" />
+              <img
+                src="/focusflow-icon.svg"
+                alt="FocusFlow Logo"
+                className="h-4 w-4 brightness-0 invert"
+              />
             </div>
             <span className="font-semibold">FocusFlow</span>
           </div>
           <div className="flex gap-8 text-sm font-medium text-slate-500 dark:text-slate-400">
-            <Link to="/privacy" className="hover:text-slate-900 dark:hover:text-white transition-colors">Privacy Policy</Link>
-            <Link to="/terms" className="hover:text-slate-900 dark:hover:text-white transition-colors">Terms of Use</Link>
-            <a href="https://github.com" className="hover:text-slate-900 dark:hover:text-white transition-colors">GitHub</a>
+            <Link
+              to="/privacy"
+              className="hover:text-slate-900 dark:hover:text-white transition-colors"
+            >
+              Privacy Policy
+            </Link>
+            <Link
+              to="/terms"
+              className="hover:text-slate-900 dark:hover:text-white transition-colors"
+            >
+              Terms of Use
+            </Link>
+            <a
+              href="https://github.com"
+              className="hover:text-slate-900 dark:hover:text-white transition-colors"
+            >
+              GitHub
+            </a>
           </div>
           <div className="text-sm text-slate-400">
             © {new Date().getFullYear()} FocusFlow. All rights reserved.
