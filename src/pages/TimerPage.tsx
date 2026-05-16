@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Camera, CameraOff, Play, Pause, Square, Sparkles, Maximize2, Minimize2 } from "lucide-react";
+import { Camera, CameraOff, Play, Pause, Square, Sparkles, Maximize2, Minimize2, AlertTriangle, Zap, TabletSmartphone, Clock } from "lucide-react";
 import { FocusStatusBadge } from "../components/focus/FocusStatusBadge";
+import { FocusMusicControl } from "../components/timer/FocusMusicControl";
 import { Button } from "../components/ui";
 import { formatTimer } from "../features/timer/format";
 import { TIMER_PRESETS } from "../features/timer/types";
 import { useStudyTimerSession } from "../features/timer/useStudyTimerSession";
 import { useFocusFlowData } from "../hooks/useFocusFlowData";
+import { useFocusMusic } from "../hooks/useFocusMusic";
 import { useFocusTracking } from "../hooks/useFocusTracking";
 import { useTabDistraction } from "../hooks/useTabDistraction";
 import { computeStabilityScore } from "../utils/stabilityScore";
@@ -42,14 +44,24 @@ export const TimerPage = () => {
     end,
     getSessionResult,
     resetSessionForm,
-    totalSec,
     manualDistractionCount,
   } = useStudyTimerSession();
   
   const cameraTracking = useFocusTracking();
+  const focusMusic = useFocusMusic();
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [sessionSaveError, setSessionSaveError] = useState<string | null>(null);
   const attemptedSessionSaveKeyRef = useRef<string | null>(null);
+  const [sessionRecap, setSessionRecap] = useState<{
+    actualMinutes: number;
+    plannedMinutes: number;
+    distractionCount: number;
+    tabSwitchCount: number;
+    tabAwayMs: number;
+    stabilityScore: number;
+    distractionTags: string[];
+    focusTracking?: { totalAwayEvents: number; longestFocusStreakMs: number };
+  } | null>(null);
 
   const isSessionActive = status === "running" || status === "paused";
   const tabDistraction = useTabDistraction(isSessionActive);
@@ -186,6 +198,21 @@ export const TimerPage = () => {
         }
       }
 
+      // Capture recap BEFORE resetSessionForm wipes the state
+      const totalDistractions = distractionTags.length + (focusTrackingSummary?.distractionEvents ?? 0) + manualDistractionCount;
+      setSessionRecap({
+        actualMinutes: result.actualMinutes,
+        plannedMinutes: result.plannedMinutes,
+        distractionCount: totalDistractions,
+        tabSwitchCount: tabDistractionSummary.tabSwitchCount,
+        tabAwayMs: tabDistractionSummary.tabAwayMs,
+        stabilityScore,
+        distractionTags: allDistractionTags,
+        focusTracking: focusTrackingSummary
+          ? { totalAwayEvents: focusTrackingSummary.totalAwayEvents, longestFocusStreakMs: focusTrackingSummary.longestFocusStreakMs }
+          : undefined,
+      });
+
       if (isFullscreen) toggleFullscreen();
       resetSessionForm();
       setSessionSaveError(null);
@@ -258,26 +285,116 @@ export const TimerPage = () => {
   const isReady = Boolean(selectedSubjectId) && Boolean(goal.trim());
 
   if (status === "completed") {
+    const recap = sessionRecap;
+    const focusPercent = recap
+      ? Math.min(100, Math.round((recap.actualMinutes / Math.max(1, recap.plannedMinutes)) * 100))
+      : 0;
+    const stabilityLabel =
+      recap && recap.stabilityScore >= 80 ? "Excellent"
+      : recap && recap.stabilityScore >= 60 ? "Good"
+      : recap && recap.stabilityScore >= 40 ? "Fair"
+      : "Needs Work";
+    const stabilityColor =
+      recap && recap.stabilityScore >= 80 ? "text-emerald-600 dark:text-emerald-400"
+      : recap && recap.stabilityScore >= 60 ? "text-amber-600 dark:text-amber-400"
+      : "text-rose-600 dark:text-rose-400";
+    const tabAwayMin = recap ? Math.round(recap.tabAwayMs / 60000) : 0;
+
     return (
-      <div className="min-h-[80vh] flex items-center justify-center">
-        <div className="text-center space-y-6 animate-fade-up max-w-md w-full p-8 rounded-3xl bg-white dark:bg-slate-900 shadow-2xl border border-slate-200 dark:border-slate-800">
-          <div className="mx-auto w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-4 dark:bg-emerald-900/30 dark:text-emerald-400">
-            <Sparkles size={32} />
+      <div className="min-h-[80vh] flex items-center justify-center py-8">
+        <div className="animate-fade-up max-w-lg w-full space-y-5">
+
+          {/* Header */}
+          <div className="text-center space-y-3">
+            <div className="mx-auto w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center dark:bg-emerald-900/30 dark:text-emerald-400">
+              <Sparkles size={32} />
+            </div>
+            <h2 className="text-3xl font-bold text-slate-900 dark:text-white">Session Complete!</h2>
+            <p className="text-slate-500 dark:text-slate-400 text-sm">
+              {selectedSubject?.name} &middot; {selectedTopic?.title || "General Study"}
+            </p>
           </div>
-          <h2 className="text-3xl font-bold text-slate-900 dark:text-white">Session Complete!</h2>
-          <p className="text-slate-600 dark:text-slate-400">
-            Great focus. You studied <strong>{selectedSubject?.name}</strong> for <strong>{Math.max(0, Math.floor((totalSec - remainingSec) / 60))} minutes</strong>.
-          </p>
-          <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700">
-            <p className="text-sm font-medium text-slate-500 mb-1">Topic Covered</p>
-            <p className="font-semibold text-slate-900 dark:text-slate-100">{selectedTopic?.title || "General Study"}</p>
-          </div>
+
+          {/* Stats grid */}
+          {recap ? (
+            <div className="grid grid-cols-2 gap-3">
+              {/* Duration */}
+              <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
+                <div className="flex items-center gap-2 mb-1">
+                  <Clock size={14} className="text-brand-500" />
+                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Duration</p>
+                </div>
+                <p className="text-2xl font-bold text-slate-900 dark:text-white">{recap.actualMinutes}<span className="text-sm font-normal text-slate-500 ml-1">min</span></p>
+                <p className="text-xs text-slate-400 mt-0.5">of {recap.plannedMinutes} planned</p>
+              </div>
+
+              {/* Focus score */}
+              <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
+                <div className="flex items-center gap-2 mb-1">
+                  <Zap size={14} className="text-brand-500" />
+                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Focus</p>
+                </div>
+                <p className={`text-2xl font-bold ${stabilityColor}`}>{recap.stabilityScore}<span className="text-sm font-normal text-slate-500 ml-1">/100</span></p>
+                <p className="text-xs text-slate-400 mt-0.5">{stabilityLabel} &middot; {focusPercent}% completion</p>
+              </div>
+
+              {/* Distractions */}
+              <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
+                <div className="flex items-center gap-2 mb-1">
+                  <AlertTriangle size={14} className={recap.distractionCount === 0 ? "text-emerald-500" : "text-amber-500"} />
+                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Distractions</p>
+                </div>
+                <p className={`text-2xl font-bold ${recap.distractionCount === 0 ? "text-emerald-600 dark:text-emerald-400" : "text-slate-900 dark:text-white"}`}>
+                  {recap.distractionCount}
+                </p>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  {recap.distractionCount === 0 ? "Perfect session! 🎉" : `${recap.tabSwitchCount} tab switch${recap.tabSwitchCount !== 1 ? "es" : ""}`}
+                </p>
+              </div>
+
+              {/* Tab away */}
+              <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
+                <div className="flex items-center gap-2 mb-1">
+                  <TabletSmartphone size={14} className="text-slate-400" />
+                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Time Away</p>
+                </div>
+                <p className={`text-2xl font-bold ${tabAwayMin === 0 ? "text-emerald-600 dark:text-emerald-400" : "text-slate-900 dark:text-white"}`}>
+                  {tabAwayMin}<span className="text-sm font-normal text-slate-500 ml-1">min</span>
+                </p>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  {recap.focusTracking ? `${recap.focusTracking.totalAwayEvents} camera event${recap.focusTracking.totalAwayEvents !== 1 ? "s" : ""}` : "Tab away time"}
+                </p>
+              </div>
+            </div>
+          ) : null}
+
+          {/* Distraction tags */}
+          {recap && recap.distractionTags.length > 0 ? (
+            <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20">
+              <p className="text-xs font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400 mb-2">Distraction Types</p>
+              <div className="flex flex-wrap gap-2">
+                {recap.distractionTags.map((tag) => (
+                  <span key={tag} className="px-3 py-1 rounded-full bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 text-xs font-medium capitalize">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </div>
+          ) : recap ? (
+            <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 text-center">
+              <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">🎯 Zero distractions recorded — excellent focus!</p>
+            </div>
+          ) : null}
+
+          {/* Error */}
           {sessionSaveError ? (
             <p className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200">
               {sessionSaveError}
             </p>
           ) : null}
+
           <Button className="w-full h-12 rounded-xl text-lg" onClick={() => {
+            setSessionRecap(null);
             reset();
             resetSessionForm();
           }}>
@@ -390,6 +507,32 @@ export const TimerPage = () => {
           <div className={cn("w-full max-w-sm mx-auto h-2 mt-8 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden transition-all duration-500", isSessionActive ? "opacity-100" : "opacity-0")}>
             <div className="h-full bg-brand-500 transition-all duration-1000 ease-linear" style={{ width: `${progress}%` }} />
           </div>
+
+          {/* Live distraction counter */}
+          {isSessionActive && (manualDistractionCount + distractionTags.length) > 0 ? (
+            <div className="mt-4 flex items-center justify-center gap-2 animate-fade-up">
+              <span className={cn(
+                "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold",
+                (manualDistractionCount + distractionTags.length) >= 5
+                  ? "bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300"
+                  : "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300",
+                isFullscreen ? "bg-white/10 text-white/70" : ""
+              )}>
+                <AlertTriangle size={11} />
+                {manualDistractionCount + distractionTags.length} distraction{(manualDistractionCount + distractionTags.length) !== 1 ? "s" : ""} detected
+              </span>
+            </div>
+          ) : isSessionActive ? (
+            <div className="mt-4 flex items-center justify-center">
+              <span className={cn(
+                "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold",
+                isFullscreen ? "bg-white/10 text-white/50" : "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400"
+              )}>
+                <Zap size={11} />
+                In the zone — no distractions
+              </span>
+            </div>
+          ) : null}
         </div>
 
         {/* Controls */}
@@ -456,6 +599,19 @@ export const TimerPage = () => {
                 </button>
               </div>
             )}
+          </div>
+
+          {/* Optional Focus Music */}
+          <div className={cn("w-full max-w-xs transition-opacity duration-500", (isSessionActive && isFullscreen) ? "opacity-0 pointer-events-none" : "opacity-100")}>
+            <FocusMusicControl
+              isPlaying={focusMusic.isPlaying}
+              volume={focusMusic.volume}
+              soundType={focusMusic.soundType}
+              onToggle={focusMusic.toggle}
+              onChangeSound={focusMusic.changeSound}
+              onVolumeChange={focusMusic.setVolume}
+              isFullscreen={isFullscreen}
+            />
           </div>
         </div>
 

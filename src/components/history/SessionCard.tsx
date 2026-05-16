@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { AlertTriangle, TabletSmartphone } from "lucide-react";
 import type { StudySession, Subject } from "../../types/models";
 import type { ResolvedSubject } from "../../utils/subjects";
 import { getSubjectVisuals } from "../../utils/subjects";
@@ -74,7 +75,7 @@ export const SessionCard = ({
         </div>
       </div>
 
-      <div className="mt-4 grid grid-cols-3 gap-3 text-center">
+      <div className="mt-4 grid grid-cols-4 gap-2 text-center">
         <div
           className="rounded-2xl bg-slate-50/90 px-2 py-3 shadow-soft dark:bg-surface-900/70"
           style={subjectVisuals?.panelStyle}
@@ -90,7 +91,46 @@ export const SessionCard = ({
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Plan</p>
           <p className="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">{session.plannedMinutes}m</p>
         </div>
+        <div className={`rounded-2xl px-2 py-3 shadow-soft ${
+          (session.distractionCount ?? 0) === 0
+            ? "bg-emerald-50 dark:bg-emerald-500/10"
+            : (session.distractionCount ?? 0) >= 5
+            ? "bg-rose-50 dark:bg-rose-500/10"
+            : "bg-amber-50 dark:bg-amber-500/10"
+        }`}>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 flex items-center justify-center gap-1">
+            <AlertTriangle size={9} />
+          </p>
+          <p className={`mt-2 text-sm font-semibold ${
+            (session.distractionCount ?? 0) === 0
+              ? "text-emerald-700 dark:text-emerald-400"
+              : (session.distractionCount ?? 0) >= 5
+              ? "text-rose-700 dark:text-rose-400"
+              : "text-amber-700 dark:text-amber-400"
+          }`}>{session.distractionCount ?? 0}</p>
+        </div>
       </div>
+
+      {/* Distraction tags */}
+      {session.distractionTags && session.distractionTags.length > 0 ? (
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {session.distractionTags.map((tag) => (
+            <span
+              key={tag}
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300 text-[10px] font-medium border border-amber-200 dark:border-amber-500/20 capitalize"
+            >
+              <AlertTriangle size={9} />
+              {tag}
+            </span>
+          ))}
+          {(session.tabSwitchCount ?? 0) > 0 && (
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[10px] font-medium border border-slate-200 dark:border-slate-700">
+              <TabletSmartphone size={9} />
+              {session.tabSwitchCount} tab switch{session.tabSwitchCount !== 1 ? "es" : ""}
+            </span>
+          )}
+        </div>
+      ) : null}
 
       {shortNote ? (
         <p className="mt-4 text-sm leading-6 text-slate-600 dark:text-slate-300">
