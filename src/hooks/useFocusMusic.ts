@@ -43,13 +43,13 @@ export const useFocusMusic = () => {
     nodesRef.current = [];
   }, []);
 
-  /** Create (or reuse) the AudioContext and master gain. */
-  const ensureContext = useCallback(() => {
+  /** Create (or reuse) the AudioContext and master gain. Returns a promise that resolves once the context is running. */
+  const ensureContext = useCallback(async () => {
     if (!ctxRef.current || ctxRef.current.state === "closed") {
       ctxRef.current = new AudioContext();
     }
     if (ctxRef.current.state === "suspended") {
-      void ctxRef.current.resume();
+      await ctxRef.current.resume();
     }
     if (!gainRef.current || gainRef.current.context !== ctxRef.current) {
       gainRef.current = ctxRef.current.createGain();
@@ -258,9 +258,12 @@ export const useFocusMusic = () => {
   }, [stopNodes]);
 
   /** Start the currently selected sound. */
-  const play = useCallback(() => {
+  const play = useCallback(async () => {
     stopNodes();
-    const { ctx, gain } = ensureContext();
+    const { ctx, gain } = await ensureContext();
+
+    // Guard: context must be running before we schedule nodes
+    if (ctx.state !== "running") return;
 
     switch (soundType) {
       case "brown": startBrownNoise(ctx, gain); break;
@@ -274,7 +277,7 @@ export const useFocusMusic = () => {
 
   const toggle = useCallback(() => {
     if (isPlaying) stop();
-    else play();
+    else void play();
   }, [isPlaying, play, stop]);
 
   /** Change sound type — restart if already playing. */
@@ -292,13 +295,16 @@ export const useFocusMusic = () => {
   /** Restart when sound type changes mid-playback. */
   useEffect(() => {
     if (!isPlaying) return;
-    const { ctx, gain } = ensureContext();
-    switch (soundType) {
-      case "brown": startBrownNoise(ctx, gain); break;
-      case "white": startWhiteNoise(ctx, gain); break;
-      case "rain":  startRain(ctx, gain);       break;
-      case "cafe":  startCafe(ctx, gain);        break;
-    }
+    void (async () => {
+      const { ctx, gain } = await ensureContext();
+      if (ctx.state !== "running") return;
+      switch (soundType) {
+        case "brown": startBrownNoise(ctx, gain); break;
+        case "white": startWhiteNoise(ctx, gain); break;
+        case "rain":  startRain(ctx, gain);       break;
+        case "cafe":  startCafe(ctx, gain);        break;
+      }
+    })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [soundType]);
 
